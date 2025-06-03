@@ -16,12 +16,32 @@ app.use(cors({
     optionsSuccessStatus: 204  // Return 204 for OPTIONS requests
 }));
 
-// Apply CORS to all routes
+// Apply CORS to all routes with specific origins allowed
 app.use(function(req, res, next) {
-    res.header('Access-Control-Allow-Origin', '*');
+    // List of allowed origins
+    const allowedOrigins = [
+        'https://brightforgeseo.com',
+        'https://www.brightforgeseo.com',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5000',
+        'http://127.0.0.1:5000'
+    ];
+    
+    const origin = req.headers.origin;
+    
+    // Check if the request origin is in our list of allowed origins
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    } else {
+        // For any other origin, allow it during development
+        res.header('Access-Control-Allow-Origin', '*');
+    }
+    
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin');
     res.header('Access-Control-Allow-Credentials', 'false');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
     
     // Handle OPTIONS method
     if (req.method === 'OPTIONS') {
