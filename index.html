@@ -508,10 +508,11 @@
     </div>
 
     <script>
-        // Use the correct API URL for each environment
+        // IMPORTANT: Always use the direct Render deployment URL in production
+        // This ensures we don't try to make API calls to the WordPress site
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3000/api/analyze'  // Development environment
-            : 'https://seo-audit-tool-backend.onrender.com/api/analyze';  // Production environment - direct Render URL
+            : 'https://seo-audit-tool-backend.onrender.com/api/analyze';  // Production environment - ALWAYS use direct Render URL
             
         console.log('Using API URL:', API_URL);
 
@@ -545,11 +546,15 @@
                 // Add a timestamp to prevent caching issues
                 const timestamp = new Date().getTime();
                 
-                // Try with full URL if on production
-                const fullApiUrl = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-                    ? `${window.location.origin}/api/analyze?t=${timestamp}`
-                    : API_URL;
-                    
+                // Force use of the direct Render URL in production
+                let fullApiUrl;
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    fullApiUrl = `${API_URL}?t=${timestamp}`;
+                } else {
+                    // Always use the direct Render URL, never try to use a relative path
+                    fullApiUrl = `https://seo-audit-tool-backend.onrender.com/api/analyze?t=${timestamp}`;
+                }
+                
                 console.log('Using full API URL:', fullApiUrl);
                 
                 const response = await fetch(fullApiUrl, {
