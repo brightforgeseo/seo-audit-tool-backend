@@ -285,10 +285,131 @@
                 height: 56px;
             }
         }
+        
         /* Added styles for SEO analysis results */
         .analysis-details {
             margin-top: 30px;
+            padding: 0 20px 40px;
         }
+        
+        .score-explanations {
+            margin-top: 30px;
+            margin-bottom: 20px;
+            padding: 0 20px;
+        }
+        
+        .explanation {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .explanation h4 {
+            margin-top: 0;
+            color: var(--brand-accent);
+            font-size: 18px;
+        }
+        
+        .explanation ul {
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+        
+        .category-section {
+            margin-bottom: 30px;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .category-section h3 {
+            margin-top: 0;
+            color: var(--brand-accent);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .category-score {
+            background: var(--brand-gradient);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .recommendation-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .recommendation-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .recommendation-icon {
+            min-width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .recommendation-icon.good {
+            background-color: #4caf50;
+            color: white;
+        }
+        
+        .recommendation-icon.warning {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .recommendation-icon.bad {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .recommendation-text {
+            flex: 1;
+        }
+        
+        .recommendation-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .analysis-details-raw {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .analysis-details-raw h4 {
+            margin-top: 0;
+            color: #444;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 15px;
+        }
+        
         .analysis-item {
             background: #fff;
             padding: 15px;
@@ -369,9 +490,19 @@
                     <div class="score-description">Comprehensive Assessment</div>
                 </div>
             </div>
-            <div class="analysis-details">
-                <h3>SEO Analysis Details</h3>
-                <div id="analysisDetails"></div>
+            <div class="score-explanations">
+                <div class="explanation">
+                    <h4>What do these scores mean?</h4>
+                    <p>Our SEO Audit analyzes your website across three critical areas:</p>
+                    <ul>
+                        <li><strong>On-page SEO Score</strong> - Evaluates title, meta description, headings, and internal linking</li>
+                        <li><strong>Technical SEO Score</strong> - Checks HTTPS, mobile-friendliness, performance, and technical elements</li>
+                        <li><strong>Content Score</strong> - Assesses images, videos, text quality, and social sharing potential</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="analysis-details" id="analysisDetails">
+                <!-- Will be populated by JavaScript -->
             </div>
         </div>
     </div>
@@ -563,25 +694,238 @@
                     document.getElementById('contentScore').innerHTML = `${contentGrade} <small>${contentScore}%</small>`;
                     document.getElementById('overallScore').innerHTML = `${overallGrade} <small>${overallScore}%</small>`;
                     
-                    // Populate analysis details
+                    // Populate analysis details with categorized recommendations
                     const analysisDetails = document.getElementById('analysisDetails');
-                    // Organize analysis into categories
+                    
+                    // Create On-Page SEO section with recommendations
+                    let onPageRecommendations = '';
+                    
+                    // Title recommendations
+                    if (titleScoreValue < 70) {
+                        onPageRecommendations += createRecommendationItem(
+                            'bad',
+                            'Title needs improvement',
+                            `Your title is ${titleLength} characters. ${getTitleRecommendation(titleLength)}`
+                        );
+                    } else {
+                        onPageRecommendations += createRecommendationItem(
+                            'good',
+                            'Title length is optimal',
+                            `Your title is ${titleLength} characters, which is within the recommended range.`
+                        );
+                    }
+                    
+                    // Meta description recommendations
+                    if (metaScoreValue < 70) {
+                        onPageRecommendations += createRecommendationItem(
+                            'bad',
+                            'Meta description needs improvement',
+                            `Your meta description is ${metaDescLength} characters. ${getMetaRecommendation(metaDescLength)}`
+                        );
+                    } else if (analysis.metaDescription) {
+                        onPageRecommendations += createRecommendationItem(
+                            'good',
+                            'Meta description is well-optimized',
+                            `Your meta description is ${metaDescLength} characters, which is within the recommended range.`
+                        );
+                    } else {
+                        onPageRecommendations += createRecommendationItem(
+                            'bad',
+                            'Missing meta description',
+                            'Your page is missing a meta description. Add a compelling description between 120-155 characters.'
+                        );
+                    }
+                    
+                    // Heading structure recommendations
+                    if (analysis.h1Count === 0) {
+                        onPageRecommendations += createRecommendationItem(
+                            'bad',
+                            'Missing H1 heading',
+                            'Your page is missing an H1 heading. Add a primary H1 heading that includes your main keyword.'
+                        );
+                    } else if (analysis.h1Count > 1) {
+                        onPageRecommendations += createRecommendationItem(
+                            'warning',
+                            'Multiple H1 headings detected',
+                            `Your page has ${analysis.h1Count} H1 headings. For optimal SEO, use only one H1 heading.`
+                        );
+                    } else {
+                        onPageRecommendations += createRecommendationItem(
+                            'good',
+                            'H1 heading is well-optimized',
+                            `Your page has 1 H1 heading: "${analysis.h1Text || 'Not readable'}"`
+                        );
+                    }
+                    
+                    // Link recommendations
+                    if (internalLinkScore < 60) {
+                        onPageRecommendations += createRecommendationItem(
+                            'warning',
+                            'Improve internal linking',
+                            `Your page has ${internalLinksCount} internal links. Adding more internal links can improve site navigation and SEO.`
+                        );
+                    } else {
+                        onPageRecommendations += createRecommendationItem(
+                            'good',
+                            'Good internal linking structure',
+                            `Your page has ${internalLinksCount} internal links, which helps with website navigation and SEO.`
+                        );
+                    }
+                    
+                    // Generate Technical SEO recommendations
+                    let technicalRecommendations = '';
+                    
+                    // SSL recommendations
+                    if (!hasSSL) {
+                        technicalRecommendations += createRecommendationItem(
+                            'bad',
+                            'SSL certificate missing',
+                            'Your website does not use HTTPS. For security and SEO benefits, install an SSL certificate.'
+                        );
+                    } else {
+                        technicalRecommendations += createRecommendationItem(
+                            'good',
+                            'SSL certificate installed',
+                            'Your website correctly uses HTTPS, which is important for security and search rankings.'
+                        );
+                    }
+                    
+                    // Mobile viewport recommendations
+                    if (!hasMobileViewport) {
+                        technicalRecommendations += createRecommendationItem(
+                            'bad',
+                            'Mobile viewport not specified',
+                            'Your page is missing a viewport meta tag, which is essential for mobile optimization.'
+                        );
+                    } else {
+                        technicalRecommendations += createRecommendationItem(
+                            'good',
+                            'Mobile viewport is specified',
+                            'Your page includes a viewport meta tag, which is good for mobile optimization.'
+                        );
+                    }
+                    
+                    // Canonical URL recommendations
+                    if (!hasCanonical) {
+                        technicalRecommendations += createRecommendationItem(
+                            'warning',
+                            'Missing canonical tag',
+                            'Your page is missing a canonical tag, which helps prevent duplicate content issues.'
+                        );
+                    } else {
+                        technicalRecommendations += createRecommendationItem(
+                            'good',
+                            'Canonical tag is present',
+                            `Your page has a canonical URL specified: ${analysis.canonicalUrl}`
+                        );
+                    }
+                    
+                    // Performance recommendations
+                    if (performanceScore < 70) {
+                        technicalRecommendations += createRecommendationItem(
+                            'warning',
+                            'Performance optimization needed',
+                            `Your page has ${scriptCount} script files and ${stylesheetCount} stylesheets. Consider minimizing and combining these resources.`
+                        );
+                    } else {
+                        technicalRecommendations += createRecommendationItem(
+                            'good',
+                            'Good performance indicators',
+                            'Your page appears to have reasonable performance indicators.'
+                        );
+                    }
+                    
+                    // Generate Content Score recommendations
+                    let contentRecommendations = '';
+                    
+                    // Image alt text recommendations
+                    const imgWithAltCount = analysis.imgWithAltCount || 0;
+                    if (imgAltScoreValue < 70 && analysis.imgCount > 0) {
+                        contentRecommendations += createRecommendationItem(
+                            'warning',
+                            'Image alt text needs improvement',
+                            `Only ${imgWithAltCount} out of ${analysis.imgCount} images have alt text. Add descriptive alt text to all images.`
+                        );
+                    } else if (analysis.imgCount > 0) {
+                        contentRecommendations += createRecommendationItem(
+                            'good',
+                            'Good image alt text usage',
+                            `${imgWithAltCount} out of ${analysis.imgCount} images have alt text.`
+                        );
+                    }
+                    
+                    // Content length recommendations
+                    if (contentLengthScore < 60) {
+                        contentRecommendations += createRecommendationItem(
+                            'warning',
+                            'Content is too thin',
+                            'Your page has a low text-to-code ratio. Adding more quality content can improve SEO performance.'
+                        );
+                    } else {
+                        contentRecommendations += createRecommendationItem(
+                            'good',
+                            'Good content volume',
+                            'Your page has a healthy amount of content with a good text-to-code ratio.'
+                        );
+                    }
+                    
+                    // Keyword density recommendations
+                    if (keywordScore < 50) {
+                        contentRecommendations += createRecommendationItem(
+                            'warning',
+                            'Keyword usage can be improved',
+                            `Your keyword density is approximately ${analysis.keywordDensity ? analysis.keywordDensity.toFixed(1) : '0'}%. Consider optimizing your content with more relevant keywords.`
+                        );
+                    } else {
+                        contentRecommendations += createRecommendationItem(
+                            'good',
+                            'Good keyword usage',
+                            `Your keyword density is approximately ${analysis.keywordDensity ? analysis.keywordDensity.toFixed(1) : '0'}%, which is within a natural range.`
+                        );
+                    }
+                    
+                    // Social media recommendations
+                    if (socialMediaScore < 50) {
+                        contentRecommendations += createRecommendationItem(
+                            'warning',
+                            'Social media meta tags missing',
+                            'Your page is missing OpenGraph and Twitter card tags, which help optimize social media sharing.'
+                        );
+                    } else {
+                        contentRecommendations += createRecommendationItem(
+                            'good',
+                            'Social media tags present',
+                            `Your page has ${analysis.socialMediaTags} social media tags, which helps with social sharing.`
+                        );
+                    }
+                    
+                    // Put it all together in categorized sections
                     analysisDetails.innerHTML = `
-                        <h4>Content & On-Page SEO</h4>
-                        <div class="analysis-item">
-                            <div class="analysis-label">Page Title</div>
-                            <div class="analysis-value">${analysis.title || 'Not found'}</div>
-                            <div class="analysis-indicator ${getTitleIndicatorClass(titleLength)}">
-                                Length: ${titleLength} characters ${getTitleRecommendation(titleLength)}
-                            </div>
+                        <div class="category-section">
+                            <h3>On-page SEO <span class="category-score">${onPageGrade} (${onPageScore}%)</span></h3>
+                            ${onPageRecommendations}
                         </div>
-                        <div class="analysis-item">
-                            <div class="analysis-label">Meta Description</div>
-                            <div class="analysis-value">${analysis.metaDescription || 'Not found'}</div>
-                            <div class="analysis-indicator ${getMetaIndicatorClass(metaDescLength)}">
-                                Length: ${metaDescLength} characters ${getMetaRecommendation(metaDescLength)}
-                            </div>
+                        
+                        <div class="category-section">
+                            <h3>Technical SEO <span class="category-score">${technicalGrade} (${technicalScore}%)</span></h3>
+                            ${technicalRecommendations}
                         </div>
+                        
+                        <div class="category-section">
+                            <h3>Content Quality <span class="category-score">${contentGrade} (${contentScore}%)</span></h3>
+                            ${contentRecommendations}
+                        </div>
+                        
+                        <div class="analysis-details-raw">
+                            <h4>Page Details</h4>
+                            <div class="analysis-item">
+                                <div class="analysis-label">Page Title</div>
+                                <div class="analysis-value">${analysis.title || 'Not found'}</div>
+                            </div>
+                            <div class="analysis-item">
+                                <div class="analysis-label">Meta Description</div>
+                                <div class="analysis-value">${analysis.metaDescription || 'Not found'}</div>
+                            </div>
                         <div class="analysis-item">
                             <div class="analysis-label">Meta Keywords</div>
                             <div class="analysis-value">${analysis.keywordsMeta || 'Not found'}</div>
@@ -833,19 +1177,34 @@
         }
         
         function getLetterGrade(score) {
-            if (score >= 90) return 'A+';
-            if (score >= 85) return 'A';
-            if (score >= 80) return 'A-';
-            if (score >= 75) return 'B+';
-            if (score >= 70) return 'B';
-            if (score >= 65) return 'B-';
-            if (score >= 60) return 'C+';
-            if (score >= 55) return 'C';
-            if (score >= 50) return 'C-';
-            if (score >= 45) return 'D+';
-            if (score >= 40) return 'D';
+            if (score >= 97) return 'A+';
+            if (score >= 93) return 'A';
+            if (score >= 90) return 'A-';
+            if (score >= 87) return 'B+';
+            if (score >= 83) return 'B';
+            if (score >= 80) return 'B-';
+            if (score >= 77) return 'C+';
+            if (score >= 73) return 'C';
+            if (score >= 70) return 'C-';
+            if (score >= 67) return 'D+';
+            if (score >= 63) return 'D';
+            if (score >= 60) return 'D-';
             return 'F';
         }
+            
+            // Create HTML for a recommendation item
+            function createRecommendationItem(status, title, description) {
+                const icon = status === 'good' ? '✓' : (status === 'warning' ? '!': '✗');
+                return `
+                    <div class="recommendation-item">
+                        <div class="recommendation-icon ${status}">${icon}</div>
+                        <div class="recommendation-text">
+                            <div class="recommendation-title">${title}</div>
+                            <div>${description}</div>
+                        </div>
+                    </div>
+                `;
+            }
         
         function getTitleIndicatorClass(length) {
             if (length >= 30 && length <= 60) return 'good-indicator';
