@@ -757,6 +757,51 @@
                         );
                     }
                     
+                    // H2-H6 heading structure recommendations
+                    const headingStructure = {
+                        h2: analysis.h2Count || 0,
+                        h3: analysis.h3Count || 0,
+                        h4: analysis.h4Count || 0,
+                        h5: analysis.h5Count || 0,
+                        h6: analysis.h6Count || 0
+                    };
+                    
+                    // Evaluate the heading structure
+                    let headingStructureStatus = 'good';
+                    let headingStructureTitle = 'Good heading structure';
+                    let headingStructureMessage = `Your page has a good heading structure with `;
+                    
+                    // Check for proper hierarchy
+                    if (headingStructure.h2 === 0 && (headingStructure.h3 > 0 || headingStructure.h4 > 0)) {
+                        headingStructureStatus = 'warning';
+                        headingStructureTitle = 'Improper heading hierarchy';
+                        headingStructureMessage = 'Your page skips H2 headings but uses H3/H4/H5/H6. Maintain proper hierarchy for better SEO.';
+                    } else if (headingStructure.h2 > 0 && headingStructure.h3 === 0 && 
+                              (headingStructure.h4 > 0 || headingStructure.h5 > 0 || headingStructure.h6 > 0)) {
+                        headingStructureStatus = 'warning';
+                        headingStructureTitle = 'Improper heading hierarchy';
+                        headingStructureMessage = 'Your page skips H3 headings but uses H4/H5/H6. Maintain proper hierarchy for better SEO.';
+                    } else if (headingStructure.h2 === 0 && headingStructure.h3 === 0 && 
+                             headingStructure.h4 === 0 && headingStructure.h5 === 0 && headingStructure.h6 === 0) {
+                        // Only has H1 but no other headings
+                        if (analysis.h1Count > 0) {
+                            headingStructureStatus = 'warning';
+                            headingStructureTitle = 'Limited heading structure';
+                            headingStructureMessage = 'Your page only has H1 heading(s). Add H2-H6 headings to improve content structure and SEO.';
+                        }
+                    } else {
+                        // Has a good heading structure
+                        headingStructureMessage += 
+                            `${headingStructure.h2} H2, ${headingStructure.h3} H3, ${headingStructure.h4} H4, ` + 
+                            `${headingStructure.h5} H5, and ${headingStructure.h6} H6 headings.`;
+                    }
+                    
+                    onPageRecommendations += createRecommendationItem(
+                        headingStructureStatus,
+                        headingStructureTitle,
+                        headingStructureMessage
+                    );
+                    
                     // Link recommendations
                     if (internalLinkScore < 60) {
                         onPageRecommendations += createRecommendationItem(
