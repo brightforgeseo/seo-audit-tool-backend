@@ -577,9 +577,9 @@
                     const metaDescLength = descriptionElement ? descriptionElement.textContent.length : 0;
                     
                     // Handle image alt text
-                    const totalImages = analysis.totalImages || 0;
-                    const imagesWithAlt = analysis.imagesWithAlt || [];
-                    const imgAltPercent = imagesWithAlt.length > 0 ? Math.round((imagesWithAlt.length / totalImages) * 100) : 0;
+                    const totalImages = analysis.imgCount || 0;
+                    const imagesWithAlt = analysis.imgWithAltCount || 0;
+                    const imgAltPercent = totalImages > 0 ? Math.round((imagesWithAlt / totalImages) * 100) : 0;
                     
                     console.log('Calculating comprehensive SEO scores...');
                     
@@ -590,9 +590,9 @@
                     const externalLinksCount = analysis.externalLinks || 0;
                     const hasSSL = analysis.hasSSL || false;
                     const hasMobileViewport = analysis.hasMobileViewport || false;
-                    const scriptCount = analysis.scripts || 0;
-                    const stylesheetCount = analysis.stylesheets || 0;
-                    const socialMediaTags = (analysis.openGraphTags || 0) + (analysis.twitterCardTags || 0);
+                    const scriptCount = analysis.scriptCount || 0;
+                    const stylesheetCount = analysis.cssCount || 0;
+                    const socialMediaTags = analysis.socialMediaTags || 0;
                     
                     // Estimate text-to-code ratio and keyword density if not provided
                     const textToCodeRatio = analysis.textToCodeRatio || 0.3; // default estimate
