@@ -83,9 +83,17 @@ app.post('/api/analyze', async (req, res) => {
         // Extract SEO elements
         const title = $('title').text();
         const metaDescription = $('meta[name="description"]').attr('content') || '';
+        // Improve heading detection with more robust selectors
         const h1Count = $('h1').length;
         const h1Text = $('h1').first().text() || '';
         const h2Count = $('h2').length;
+        const h3Count = $('h3').length;
+        const h4Count = $('h4').length;
+        const h5Count = $('h5').length;
+        const h6Count = $('h6').length;
+        
+        // Debug output for heading detection
+        console.log('Heading counts:', { h1: h1Count, h2: h2Count, h3: h3Count, h4: h4Count, h5: h5Count, h6: h6Count });
         const imgCount = $('img').length;
         const imgWithAltCount = $('img[alt]').length;
         const internalLinks = $('a[href^="/"], a[href^="' + url + '"], a[href^="http://' + new URL(url).hostname + '"], a[href^="https://' + new URL(url).hostname + '"]').length;
@@ -97,10 +105,10 @@ app.post('/api/analyze', async (req, res) => {
         const headings = {
             h1: h1Count,
             h2: h2Count,
-            h3: $('h3').length,
-            h4: $('h4').length,
-            h5: $('h5').length,
-            h6: $('h6').length
+            h3: h3Count,
+            h4: h4Count,
+            h5: h5Count,
+            h6: h6Count
         };
         
         // Check for SSL
@@ -128,6 +136,10 @@ app.post('/api/analyze', async (req, res) => {
                 h1Text,
                 h1Count,
                 h2Count,
+                h3Count,
+                h4Count,
+                h5Count,
+                h6Count,
                 imgCount,
                 imgWithAltCount,
                 internalLinks,

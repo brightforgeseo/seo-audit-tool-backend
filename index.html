@@ -511,9 +511,9 @@
                             <div class="analysis-label">Heading Structure</div>
                             <div class="analysis-value">
                                 <strong>H1:</strong> ${analysis.h1Count} tag(s) ${analysis.h1Text ? `<small>(First H1: "${analysis.h1Text.substring(0, 50)}${analysis.h1Text.length > 50 ? '...' : ''}")</small>` : ''}<br>
-                                <strong>H2:</strong> ${analysis.headings && analysis.headings.h2 ? analysis.headings.h2 : analysis.h2Count || 0} tag(s)<br>
-                                <strong>H3:</strong> ${analysis.headings && analysis.headings.h3 ? analysis.headings.h3 : 0} tag(s)<br>
-                                <strong>H4-H6:</strong> ${(analysis.headings ? (analysis.headings.h4 || 0) + (analysis.headings.h5 || 0) + (analysis.headings.h6 || 0) : 0)} tag(s)
+                                <strong>H2:</strong> ${analysis.h2Count || 0} tag(s)<br>
+                                <strong>H3:</strong> ${analysis.h3Count || 0} tag(s)<br>
+                                <strong>H4-H6:</strong> ${((analysis.h4Count || 0) + (analysis.h5Count || 0) + (analysis.h6Count || 0))} tag(s)
                             </div>
                             <div class="analysis-indicator ${getH1IndicatorClass(analysis.h1Count)}">
                                 ${getH1Recommendation(analysis.h1Count)}
