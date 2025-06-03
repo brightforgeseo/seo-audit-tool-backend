@@ -325,8 +325,8 @@
     </div>
 
     <script>
-        // Update this URL to your actual Render deployment URL
-        const API_URL = 'https://seo-audit-tool.onrender.com/api/analyze';
+        // Using the local backend API URL for testing
+        const API_URL = 'http://localhost:3000/api/analyze';
 
         document.getElementById('auditForm').addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -352,17 +352,29 @@
             submitButton.disabled = true;
 
             try {
+                console.log('Sending request to:', API_URL);
+                console.log('With payload:', JSON.stringify({ url: url }));
+                
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ url: url })
+                    body: JSON.stringify({ url: url }),
+                    // Add these options to help with potential CORS issues
+                    mode: 'cors',
+                    credentials: 'omit'
                 });
 
+                console.log('Response status:', response.status);
+                
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to run audit');
+                    try {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `Failed with status: ${response.status}`);
+                    } catch (jsonError) {
+                        throw new Error(`Request failed with status: ${response.status}`);
+                    }
                 }
 
                 const data = await response.json();

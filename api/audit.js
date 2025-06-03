@@ -8,10 +8,28 @@ const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: '*',  // Allow all origins
+    methods: ['GET', 'POST', 'OPTIONS'],  // Allow these HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],  // Allow these headers
+    credentials: false,  // Don't include credentials
+    preflightContinue: false,  // Don't pass the OPTIONS request to the next handler
+    optionsSuccessStatus: 204  // Return 204 for OPTIONS requests
 }));
+
+// Apply CORS to all routes
+app.use(function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'false');
+    
+    // Handle OPTIONS method
+    if (req.method === 'OPTIONS') {
+        return res.status(204).send();
+    }
+    next();
+});
+
 app.use(express.json());
 
 // Add preflight OPTIONS handling
