@@ -721,49 +721,9 @@
                     // Display category scores
                     document.getElementById('onPageScore').textContent = onPageGrade;
                     document.getElementById('technicalScore').textContent = technicalGrade;
-            <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add event listener for the backend status check button
-            const checkBackendButton = document.getElementById('checkBackendButton');
-            const backendStatus = document.getElementById('backendStatus');
-            
-            checkBackendButton.addEventListener('click', async function() {
-                backendStatus.style.display = 'block';
-                backendStatus.textContent = 'Checking backend status...';
-                backendStatus.style.backgroundColor = '#f8f9fa';
-                
-                try {
-                    const response = await fetch('https://seo-audit-tool-backend.onrender.com/health', {
-                        method: 'GET',
-                        mode: 'cors',
-                        headers: {
-                            'Origin': window.location.origin
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        backendStatus.textContent = '✅ Backend is online and healthy! Status: ' + JSON.stringify(data);
-                        backendStatus.style.backgroundColor = '#d4edda';
-                        backendStatus.style.borderColor = '#c3e6cb';
-                        backendStatus.style.color = '#155724';
-                    } else {
-                        const errorText = await response.text();
-                        backendStatus.textContent = '⚠️ Backend returned an error: ' + response.status + ' ' + errorText;
-                        backendStatus.style.backgroundColor = '#fff3cd';
-                        backendStatus.style.borderColor = '#ffeeba';
-                        backendStatus.style.color = '#856404';
-                    }
-                } catch (error) {
-                    backendStatus.textContent = '❌ Cannot connect to backend: ' + error.message + '. This might be due to CORS restrictions or the server being unavailable.';
-                    backendStatus.style.backgroundColor = '#f8d7da';
-                    backendStatus.style.borderColor = '#f5c6cb';
-                    backendStatus.style.color = '#721c24';
-                    console.error('Backend check error:', error);
-                }
-            });
-            tent = contentGrade;
+                    document.getElementById('contentScore').textContent = contentGrade;
                     document.getElementById('overallScore').textContent = overallGrade;
+
                     
                     // Add percentage to score cards with small text
                     document.getElementById('onPageScore').innerHTML = `${onPageGrade} <small>${onPageScore}%</small>`;
@@ -1481,6 +1441,59 @@
                 return 'Missing social media tags - add Open Graph and Twitter Card tags';
             }
         }
+        
+        // Backend Status Check Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkBackendButton = document.getElementById('checkBackendButton');
+            const backendStatus = document.getElementById('backendStatus');
+            
+            if (checkBackendButton && backendStatus) {
+                checkBackendButton.addEventListener('click', async function() {
+                    backendStatus.style.display = 'block';
+                    backendStatus.textContent = 'Checking backend status...';
+                    backendStatus.style.backgroundColor = '#f8f9fa';
+                    
+                    try {
+                        console.log('Checking backend health at:', 'https://seo-audit-tool-backend.onrender.com/health');
+                        
+                        const response = await fetch('https://seo-audit-tool-backend.onrender.com/health', {
+                            method: 'GET',
+                            mode: 'cors',
+                            headers: {
+                                'Origin': window.location.origin
+                            }
+                        });
+                        
+                        console.log('Backend health check response status:', response.status);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('Backend health check data:', data);
+                            
+                            backendStatus.textContent = '✅ Backend is online and healthy! Status: ' + JSON.stringify(data);
+                            backendStatus.style.backgroundColor = '#d4edda';
+                            backendStatus.style.borderColor = '#c3e6cb';
+                            backendStatus.style.color = '#155724';
+                        } else {
+                            const errorText = await response.text();
+                            console.error('Backend health check error:', response.status, errorText);
+                            
+                            backendStatus.textContent = '⚠️ Backend returned an error: ' + response.status + ' ' + errorText;
+                            backendStatus.style.backgroundColor = '#fff3cd';
+                            backendStatus.style.borderColor = '#ffeeba';
+                            backendStatus.style.color = '#856404';
+                        }
+                    } catch (error) {
+                        console.error('Backend health check exception:', error);
+                        
+                        backendStatus.textContent = '❌ Cannot connect to backend: ' + error.message + '. This might be due to CORS restrictions or the server being unavailable.';
+                        backendStatus.style.backgroundColor = '#f8d7da';
+                        backendStatus.style.borderColor = '#f5c6cb';
+                        backendStatus.style.color = '#721c24';
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
