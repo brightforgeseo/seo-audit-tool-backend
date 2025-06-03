@@ -1114,17 +1114,45 @@
         }
         
         function calculateHeadingStructureScore(analysis) {
-            // Check for proper heading hierarchy (h1, h2, h3, etc.)
+            // Check for proper heading hierarchy (h1, h2, h3, h4, h5, h6)
             const h1 = analysis.h1Count || 0;
             const h2 = analysis.h2Count || 0;
             const h3 = analysis.h3Count || 0;
+            const h4 = analysis.h4Count || 0;
+            const h5 = analysis.h5Count || 0;
+            const h6 = analysis.h6Count || 0;
             
-            // Ideal structure: 1 H1, some H2s, some H3s
-            if (h1 === 1 && h2 >= 2 && h3 >= 1) return 100;
-            if (h1 === 1 && h2 >= 1) return 80;
-            if (h1 === 1) return 60;
-            if (h1 > 1) return 40;
-            return 0;
+            console.log('Heading structure detected:', { h1, h2, h3, h4, h5, h6 });
+            
+            // Base score starts at 0
+            let score = 0;
+            
+            // H1 heading - most important factor
+            if (h1 === 1) {
+                score += 50; // Single H1 is ideal
+            } else if (h1 > 1) {
+                score += 25; // Multiple H1s is suboptimal but better than none
+            }
+            
+            // H2 and H3 headings - second most important
+            if (h2 >= 1) score += 20;
+            if (h3 >= 1) score += 10;
+            
+            // H4, H5, H6 headings - add bonus points for using deeper heading structure
+            if (h4 >= 1) score += 5;
+            if (h5 >= 1) score += 5;
+            if (h6 >= 1) score += 5;
+            
+            // Penalty for skipping levels in hierarchy
+            if (h1 >= 1 && h2 === 0 && (h3 > 0 || h4 > 0 || h5 > 0 || h6 > 0)) {
+                score -= 15; // Penalize for skipping H2
+            }
+            if (h2 >= 1 && h3 === 0 && (h4 > 0 || h5 > 0 || h6 > 0)) {
+                score -= 10; // Penalize for skipping H3
+            }
+            
+            // Cap the score at 100 and minimum at 0
+            return Math.max(0, Math.min(100, score));
         }
         
         function calculateInternalLinkScore(count) {
