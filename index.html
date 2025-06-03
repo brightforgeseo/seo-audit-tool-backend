@@ -508,8 +508,12 @@
     </div>
 
     <script>
-        // Use a relative URL that works in both development and production
-        const API_URL = '/api/analyze';
+        // Dynamically determine API URL based on environment
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3000/api/analyze'  // Development environment
+            : '/api/analyze';  // Production environment
+            
+        console.log('Using API URL:', API_URL);
 
         document.getElementById('auditForm').addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -536,28 +540,31 @@
 
             try {
                 console.log('Sending request to:', API_URL);
-                console.log('With payload:', JSON.stringify({ url: url }));
+                console.log('Browser location:', window.location.href);
                 
-                const response = await fetch(API_URL, {
+                // Add a timestamp to prevent caching issues
+                const timestamp = new Date().getTime();
+                
+                // Try with full URL if on production
+                const fullApiUrl = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+                    ? `${window.location.origin}/api/analyze?t=${timestamp}`
+                    : API_URL;
+                    
+                console.log('Using full API URL:', fullApiUrl);
+                
+                const response = await fetch(fullApiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
                     },
-                    body: JSON.stringify({ url: url }),
-                    // Add these options to help with potential CORS issues
-                    mode: 'cors',
-                    credentials: 'omit'
+                    body: JSON.stringify({ url: urlInput.value })
                 });
-
-                console.log('Response status:', response.status);
                 
                 if (!response.ok) {
-                    try {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || `Failed with status: ${response.status}`);
-                    } catch (jsonError) {
-                        throw new Error(`Request failed with status: ${response.status}`);
-                    }
+                    const errorText = await response.text();
+                    console.error('Server response error:', response.status, errorText);
+                    throw new Error(`Server error: ${response.status}. ${errorText || 'No additional details available.'}`);
                 }
 
                 const data = await response.json();
