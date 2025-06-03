@@ -577,12 +577,12 @@
                 // Make the actual API request
                 console.log('Sending data to backend:', { url: urlInput.value });
                 
+                // Only use minimal headers to avoid CORS issues until backend is fully updated
                 const response = await fetch(fullApiUrl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Origin': window.location.origin,
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
+                        // Removed potentially problematic headers until backend CORS config is fully deployed
                     },
                     body: JSON.stringify({ url: urlInput.value }),
                     mode: 'cors',
