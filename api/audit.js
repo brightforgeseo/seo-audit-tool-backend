@@ -94,16 +94,46 @@ app.post('/api/analyze', async (req, res) => {
         console.log('Extracted title:', title);
         const metaDescription = $('meta[name="description"]').attr('content') || '';
         const viewportMeta = $('meta[name="viewport"]').attr('content') || '';
-        // Improve heading detection with more robust selectors
-        const h1Count = $('h1').length;
-        const h1Text = $('h1').first().text() || '';
-        const h2Count = $('h2').length;
-        const h3Count = $('h3').length;
-        const h4Count = $('h4').length;
-        const h5Count = $('h5').length;
-        const h6Count = $('h6').length;
+        // Enhanced heading detection with more robust approach
+        // Log the HTML to debug
+        console.log('Parsing HTML content length:', response.data.length);
+        
+        // Get all heading tags directly from the HTML using regex
+        // Using regex that handles multi-line and nested content better
+        const htmlContent = response.data;
+        const h1Regex = /<h1[^>]*>[\s\S]*?<\/h1>/gi;
+        const h2Regex = /<h2[^>]*>[\s\S]*?<\/h2>/gi;
+        const h3Regex = /<h3[^>]*>[\s\S]*?<\/h3>/gi;
+        const h4Regex = /<h4[^>]*>[\s\S]*?<\/h4>/gi;
+        const h5Regex = /<h5[^>]*>[\s\S]*?<\/h5>/gi;
+        const h6Regex = /<h6[^>]*>[\s\S]*?<\/h6>/gi;
+        
+        // Count all matches
+        const h1Matches = htmlContent.match(h1Regex) || [];
+        const h2Matches = htmlContent.match(h2Regex) || [];
+        const h3Matches = htmlContent.match(h3Regex) || [];
+        const h4Matches = htmlContent.match(h4Regex) || [];
+        const h5Matches = htmlContent.match(h5Regex) || [];
+        const h6Matches = htmlContent.match(h6Regex) || [];
+        
+        const h1Count = h1Matches.length;
+        const h2Count = h2Matches.length;
+        const h3Count = h3Matches.length;
+        const h4Count = h4Matches.length;
+        const h5Count = h5Matches.length;
+        const h6Count = h6Matches.length;
+
+        // Get first H1 text if it exists
+        let h1Text = '';
+        if (h1Count > 0 && h1Matches[0]) {
+            // Extract text from first H1 tag, removing HTML tags
+            h1Text = h1Matches[0].replace(/<\/?[^>]+(>|$)/g, '').trim();
+        }
         
         // Debug output for heading detection
+        console.log('Enhanced heading detection:');
+        console.log('H1 Tags:', h1Matches);
+        console.log('H2 Tags:', h2Matches.slice(0, 5)); // Show first 5 only to avoid log clutter
         console.log('Heading counts:', { h1: h1Count, h2: h2Count, h3: h3Count, h4: h4Count, h5: h5Count, h6: h6Count });
         const imgCount = $('img').length;
         const imgWithAltCount = $('img[alt]').length;
