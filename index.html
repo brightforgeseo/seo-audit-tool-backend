@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Audit Tool</title>
+    <style>
+        :root {
+            --brand-accent: #FF4438;
+            --brand-accent-light: #FFE9E8;
+            --brand-dark: #1E2022;
+            --brand-soft: #52575D;
+            --brand-bg: #FFF6F5;
+            --brand-gradient: linear-gradient(90deg, #FF4438 0%, #FFB347 100%);
+        }
+        body {
+            background: var(--brand-bg);
+        }
+        .audit-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            color: var(--brand-dark);
+        }
+        .audit-form {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(255,68,56,0.05);
+        }
+        .url-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--brand-accent-light);
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .submit-button {
+            background: var(--brand-gradient);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 2px 8px rgba(255,68,56,0.10);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .submit-button:hover {
+            background: linear-gradient(90deg, #E0352D 0%, #FFB347 100%);
+            box-shadow: 0 4px 16px rgba(255,68,56,0.15);
+        }
+        .submit-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            display: none;
+            margin-top: 20px;
+        }
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .score-card {
+            background: var(--brand-accent-light);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(255,68,56,0.07);
+        }
+        .score-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: var(--brand-accent);
+        }
+        .score-label {
+            color: var(--brand-soft);
+            font-size: 14px;
+        }
+        .issues-section {
+            margin-top: 20px;
+        }
+        .issues-list {
+            list-style: none;
+            padding: 0;
+        }
+        .issue-item {
+            background: #fff;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(255,68,56,0.07);
+            border-left: 5px solid var(--brand-accent);
+        }
+        .issue-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--brand-accent);
+        }
+        .issue-description {
+            color: var(--brand-soft);
+            font-size: 14px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+            color: var(--brand-accent);
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 10px;
+            display: none;
+        }
+        .hero-section {
+            background: #fff;
+            padding: 40px 0 0 0;
+        }
+        .hero-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            gap: 0;
+            position: relative;
+        }
+        .hero-left {
+            flex: 1 1 50%;
+            min-width: 340px;
+            max-width: 540px;
+            padding-left: 40px;
+            z-index: 2;
+        }
+        .hero-right {
+            flex: 1 1 50%;
+            min-width: 340px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+        }
+        .hero-image {
+            max-width: 480px;
+            width: 100%;
+            border-radius: 0 0 0 0;
+            object-fit: cover;
+            box-shadow: none;
+        }
+        .play-button-overlay {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .play-circle {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(243,243,243,0.85);
+            box-shadow: 0 2px 8px rgba(30,32,34,0.08);
+        }
+        .hero-eyebrow {
+            color: var(--brand-accent);
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+        .hero-title {
+            font-size: 3.2rem;
+            font-weight: 800;
+            color: var(--brand-dark);
+            margin: 0 0 18px 0;
+            line-height: 1.1;
+        }
+        .hero-subtitle {
+            color: var(--brand-soft);
+            font-size: 1.2rem;
+            margin-bottom: 32px;
+            font-weight: 600;
+        }
+        .audit-form {
+            margin-bottom: 0;
+        }
+        .submit-button {
+            background: var(--brand-gradient);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 1.25rem;
+            box-shadow: 0 2px 8px rgba(255,68,56,0.10);
+            transition: background 0.2s, box-shadow 0.2s;
+            margin-bottom: 0;
+        }
+        .submit-button:hover {
+            background: linear-gradient(90deg, #E0352D 0%, #FFB347 100%);
+            box-shadow: 0 4px 16px rgba(255,68,56,0.15);
+        }
+        @media (max-width: 900px) {
+            .hero-content {
+                flex-direction: column;
+                gap: 0;
+            }
+            .hero-left, .hero-right {
+                max-width: 100%;
+                min-width: 0;
+                padding-left: 0;
+            }
+            .play-button-overlay {
+                left: 50%;
+                top: auto;
+                bottom: -40px;
+                transform: translateX(-50%);
+            }
+        }
+        @media (max-width: 600px) {
+            .hero-section {
+                padding: 20px 0 0 0;
+            }
+            .hero-title {
+                font-size: 2rem;
+            }
+            .hero-image {
+                max-width: 220px;
+            }
+            .play-circle {
+                width: 56px;
+                height: 56px;
+            }
+        }
+        /* Added styles for SEO analysis results */
+        .analysis-details {
+            margin-top: 30px;
+        }
+        .analysis-item {
+            background: #fff;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(255,68,56,0.07);
+        }
+        .analysis-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--brand-dark);
+        }
+        .analysis-value {
+            color: var(--brand-soft);
+        }
+        .good-indicator {
+            color: #28a745;
+        }
+        .warning-indicator {
+            color: #ffc107;
+        }
+        .bad-indicator {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <div class="hero-content">
+            <div class="hero-left">
+                <div class="hero-eyebrow">SEO Experts Committed to Your Success</div>
+                <h1 class="hero-title">Leading SEO Agency<br>in the Philippines</h1>
+                <div class="hero-subtitle">Bright Forge SEO helps businesses thrive online with focused strategies.</div>
+                <form class="audit-form" id="auditForm">
+                    <input type="url" id="urlInput" class="url-input" placeholder="Enter website URL (e.g., https://example.com)" required>
+                    <button type="submit" id="submitButton" class="submit-button">Get Your Free SEO Audit</button>
+                    <div id="errorMessage" class="error-message"></div>
+                </form>
+                <div id="loading" class="loading">Running audit... This may take a minute.</div>
+            </div>
+            <div class="hero-right">
+                <img class="hero-image" src="https://brightforgeseo.com/wp-content/uploads/2025/03/ChatGPT-Image-Mar-27-2025-05_19_44-PM.webp" alt="Bright Forge SEO Hero" />
+                <div class="play-button-overlay">
+                    <div class="play-circle">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="24" cy="24" r="24" fill="#F3F3F3" fill-opacity="0.85"/>
+                            <polygon points="20,16 34,24 20,32" fill="#FF4438"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="results" class="results">
+            <div class="score-grid">
+                <div class="score-card">
+                    <div class="score-label">Title Length</div>
+                    <div id="titleScore" class="score-value">-</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-label">Meta Description</div>
+                    <div id="metaScore" class="score-value">-</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-label">Image Alt Text</div>
+                    <div id="imgAltScore" class="score-value">-</div>
+                </div>
+            </div>
+            <div class="analysis-details">
+                <h3>SEO Analysis Details</h3>
+                <div id="analysisDetails"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update this URL to your actual Render deployment URL
+        const API_URL = 'https://seo-audit-tool.onrender.com/api/analyze';
+
+        document.getElementById('auditForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            
+            const urlInput = document.getElementById('urlInput');
+            const submitButton = document.getElementById('submitButton');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Validate URL
+            const url = urlInput.value.trim();
+            if (!url || !url.startsWith('http')) {
+                errorMessage.textContent = 'Please enter a valid website URL (starting with http:// or https://)';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            // Reset UI
+            errorMessage.style.display = 'none';
+            results.style.display = 'none';
+            loading.style.display = 'block';
+            submitButton.disabled = true;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to run audit');
+                }
+
+                const data = await response.json();
+                
+                // Process data from our backend API
+                if (data && data.analysis) {
+                    const analysis = data.analysis;
+                    
+                    // Calculate scores based on the data
+                    const titleLength = analysis.title ? analysis.title.length : 0;
+                    const titleScore = calculateTitleScore(titleLength);
+                    
+                    const metaDescLength = analysis.metaDescription ? analysis.metaDescription.length : 0;
+                    const metaScore = calculateMetaScore(metaDescLength);
+                    
+                    const imgAltPercent = analysis.imgCount > 0 
+                        ? Math.round((analysis.imgWithAltCount / analysis.imgCount) * 100) 
+                        : 0;
+                    const imgAltScore = calculateImgAltScore(imgAltPercent);
+                    
+                    // Update scores
+                    document.getElementById('titleScore').textContent = titleScore;
+                    document.getElementById('metaScore').textContent = metaScore;
+                    document.getElementById('imgAltScore').textContent = imgAltScore + '%';
+                    
+                    // Populate analysis details
+                    const analysisDetails = document.getElementById('analysisDetails');
+                    analysisDetails.innerHTML = `
+                        <div class="analysis-item">
+                            <div class="analysis-label">Page Title</div>
+                            <div class="analysis-value">${analysis.title || 'Not found'}</div>
+                            <div class="analysis-indicator ${getTitleIndicatorClass(titleLength)}">
+                                Length: ${titleLength} characters ${getTitleRecommendation(titleLength)}
+                            </div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="analysis-label">Meta Description</div>
+                            <div class="analysis-value">${analysis.metaDescription || 'Not found'}</div>
+                            <div class="analysis-indicator ${getMetaIndicatorClass(metaDescLength)}">
+                                Length: ${metaDescLength} characters ${getMetaRecommendation(metaDescLength)}
+                            </div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="analysis-label">H1 Tags</div>
+                            <div class="analysis-value">Found ${analysis.h1Count} H1 tag(s)</div>
+                            <div class="analysis-indicator ${getH1IndicatorClass(analysis.h1Count)}">
+                                ${getH1Recommendation(analysis.h1Count)}
+                            </div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="analysis-label">Images</div>
+                            <div class="analysis-value">Found ${analysis.imgCount} images, ${analysis.imgWithAltCount} with alt text (${imgAltPercent}%)</div>
+                            <div class="analysis-indicator ${getImgAltIndicatorClass(imgAltPercent)}">
+                                ${getImgAltRecommendation(imgAltPercent)}
+                            </div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="analysis-label">Canonical URL</div>
+                            <div class="analysis-value">${analysis.canonicalUrl || 'Not found'}</div>
+                            <div class="analysis-indicator ${analysis.canonicalUrl ? 'good-indicator' : 'bad-indicator'}">
+                                ${analysis.canonicalUrl ? 'Good: Canonical URL is present' : 'Warning: No canonical URL found'}
+                            </div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="analysis-label">Robots Meta</div>
+                            <div class="analysis-value">${analysis.robotsMeta || 'Not found'}</div>
+                            <div class="analysis-indicator ${analysis.robotsMeta ? 'good-indicator' : 'warning-indicator'}">
+                                ${analysis.robotsMeta ? 'Robots meta tag is present' : 'No robots meta tag found'}
+                            </div>
+                        </div>
+                    `;
+                    
+                    results.style.display = 'block';
+                } else {
+                    throw new Error('Invalid response format from server');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessage.textContent = error.message || 'Failed to run audit. Please try again.';
+                errorMessage.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+                submitButton.disabled = false;
+            }
+        });
+        
+        // Helper functions for scoring and recommendations
+        function calculateTitleScore(length) {
+            if (length >= 30 && length <= 60) return 'A';
+            if ((length >= 15 && length < 30) || (length > 60 && length <= 80)) return 'B';
+            return 'C';
+        }
+        
+        function calculateMetaScore(length) {
+            if (length >= 120 && length <= 160) return 'A';
+            if ((length >= 80 && length < 120) || (length > 160 && length <= 200)) return 'B';
+            return 'C';
+        }
+        
+        function calculateImgAltScore(percent) {
+            return percent;
+        }
+        
+        function getTitleIndicatorClass(length) {
+            if (length >= 30 && length <= 60) return 'good-indicator';
+            if ((length >= 15 && length < 30) || (length > 60 && length <= 80)) return 'warning-indicator';
+            return 'bad-indicator';
+        }
+        
+        function getMetaIndicatorClass(length) {
+            if (length >= 120 && length <= 160) return 'good-indicator';
+            if ((length >= 80 && length < 120) || (length > 160 && length <= 200)) return 'warning-indicator';
+            return 'bad-indicator';
+        }
+        
+        function getH1IndicatorClass(count) {
+            if (count === 1) return 'good-indicator';
+            return 'warning-indicator';
+        }
+        
+        function getImgAltIndicatorClass(percent) {
+            if (percent >= 80) return 'good-indicator';
+            if (percent >= 50) return 'warning-indicator';
+            return 'bad-indicator';
+        }
+        
+        function getTitleRecommendation(length) {
+            if (length >= 30 && length <= 60) return '(Optimal)';
+            if (length < 30) return '(Too short, should be 30-60 characters)';
+            return '(Too long, should be 30-60 characters)';
+        }
+        
+        function getMetaRecommendation(length) {
+            if (length >= 120 && length <= 160) return '(Optimal)';
+            if (length < 120) return '(Too short, should be 120-160 characters)';
+            return '(Too long, should be 120-160 characters)';
+        }
+        
+        function getH1Recommendation(count) {
+            if (count === 1) return 'Good: Page has exactly one H1 tag';
+            if (count === 0) return 'Warning: Page has no H1 tags';
+            return 'Warning: Page has multiple H1 tags';
+        }
+        
+        function getImgAltRecommendation(percent) {
+            if (percent >= 80) return 'Good: Most images have alt text';
+            if (percent >= 50) return 'Could improve: Add alt text to more images';
+            return 'Poor: Many images missing alt text';
+        }
+    </script>
+</body>
+</html>
