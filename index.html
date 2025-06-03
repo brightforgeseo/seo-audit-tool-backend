@@ -547,22 +547,42 @@
                 const timestamp = new Date().getTime();
                 
                 // Force use of the direct Render URL in production
-                let fullApiUrl;
-                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                    fullApiUrl = `${API_URL}?t=${timestamp}`;
-                } else {
-                    // Always use the direct Render URL, never try to use a relative path
-                    fullApiUrl = `https://seo-audit-tool-backend.onrender.com/api/analyze?t=${timestamp}`;
-                }
+                // ALWAYS use the hardcoded Render URL to avoid any path issues
+                const fullApiUrl = 'https://seo-audit-tool-backend.onrender.com/api/analyze?t=' + timestamp;
                 
                 console.log('Using full API URL:', fullApiUrl);
+                
+                // Check if the Render backend is reachable with a pre-flight test
+                try {
+                    const testResponse = await fetch('https://seo-audit-tool-backend.onrender.com/health', {
+                        method: 'GET',
+                        mode: 'cors',
+                        headers: {
+                            'Cache-Control': 'no-cache',
+                            'Origin': window.location.origin
+                        }
+                    });
+                    
+                    if (testResponse.ok) {
+                        console.log('Backend is reachable! Health check passed.');
+                    } else {
+                        console.warn('Backend health check failed but continuing with request anyway.');
+                    }
+                } catch (healthError) {
+                    console.error('Backend health check failed:', healthError.message);
+                    // Continue with the main request anyway
+                }
+                
+                // Make the actual API request
+                console.log('Sending data to backend:', { url: urlInput.value });
                 
                 const response = await fetch(fullApiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Cache-Control': 'no-cache',
-                        'Origin': window.location.origin
+                        'Origin': window.location.origin,
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({ url: urlInput.value }),
                     mode: 'cors',
@@ -576,6 +596,7 @@
                 }
 
                 const data = await response.json();
+                console.log('Received successful response from backend:', data);
                 
                 // Process data from our backend API
                 if (data && data.analysis) {
@@ -1092,11 +1113,36 @@
                     throw new Error('Invalid response format from server');
                 }
             } catch (error) {
-                console.error('Error:', error);
-                errorMessage.textContent = error.message || 'Failed to run audit. Please try again.';
+                console.error('Error during analysis:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    name: error.name,
+                    stack: error.stack,
+                    url: urlInput.value
+                });
+                
+                loading.style.display = 'none';
+                
+                // Show a more detailed error message to help diagnose issues
+                let errorMsg = 'Failed to analyze the website. ';
+                
+                if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                    errorMsg += 'Network error: Cannot connect to the analysis server. ' +
+                               'This could be due to CORS restrictions or the server being unavailable. ' +
+                               'Please try again later or contact support.';
+                } else if (error.message.includes('404')) {
+                    errorMsg += 'The API endpoint could not be found. ' +
+                               'Please verify that the backend server is running and accessible.';
+                } else if (error.message.includes('timeout')) {
+                    errorMsg += 'The request timed out. The website may be too large or slow to analyze. ' +
+                               'Please try a different URL or try again later.';
+                } else {
+                    errorMsg += error.message || 'Please try again or contact support if the issue persists.';
+                }
+                
+                errorMessage.textContent = errorMsg;
                 errorMessage.style.display = 'block';
             } finally {
-                loading.style.display = 'none';
                 submitButton.disabled = false;
             }
         });
