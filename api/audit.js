@@ -94,13 +94,37 @@ app.post('/api/analyze', async (req, res) => {
         console.log('Extracted title:', title);
         const metaDescription = $('meta[name="description"]').attr('content') || '';
         const viewportMeta = $('meta[name="viewport"]').attr('content') || '';
-        // Enhanced heading detection with more robust approach
-        // Log the HTML to debug
+        // Super robust heading detection - using multiple methods in combination
+        console.log('URL being analyzed:', url);
         console.log('Parsing HTML content length:', response.data.length);
         
-        // Get all heading tags directly from the HTML using regex
-        // Using regex that handles multi-line and nested content better
+        // Method 1: Use Cheerio with direct tag selectors and log fully
+        let h1CountCheerio = $('h1').length;
+        let h2CountCheerio = $('h2').length;
+        let h3CountCheerio = $('h3').length;
+        let h4CountCheerio = $('h4').length;
+        let h5CountCheerio = $('h5').length;
+        let h6CountCheerio = $('h6').length;
+
+        // Log ALL found tags for debugging
+        console.log('Cheerio found H1 tags:', $('h1').length);
+        if (h1CountCheerio > 0) {
+            $('h1').each((i, el) => {
+                console.log(`H1 #${i+1} text:`, $(el).text());
+                console.log(`H1 #${i+1} html:`, $(el).html());
+            });
+        }
+        console.log('Cheerio found H2 tags:', $('h2').length);
+        if (h2CountCheerio > 0) {
+            $('h2').each((i, el) => {
+                if (i < 3) console.log(`H2 #${i+1} text:`, $(el).text()); // Log only first 3 to avoid clutter
+            });
+        }
+        
+        // Method 2: Use regex approach as a backup
         const htmlContent = response.data;
+        
+        // These patterns handle complex nested tags better
         const h1Regex = /<h1[^>]*>[\s\S]*?<\/h1>/gi;
         const h2Regex = /<h2[^>]*>[\s\S]*?<\/h2>/gi;
         const h3Regex = /<h3[^>]*>[\s\S]*?<\/h3>/gi;
@@ -108,7 +132,7 @@ app.post('/api/analyze', async (req, res) => {
         const h5Regex = /<h5[^>]*>[\s\S]*?<\/h5>/gi;
         const h6Regex = /<h6[^>]*>[\s\S]*?<\/h6>/gi;
         
-        // Count all matches
+        // Count matches with regex
         const h1Matches = htmlContent.match(h1Regex) || [];
         const h2Matches = htmlContent.match(h2Regex) || [];
         const h3Matches = htmlContent.match(h3Regex) || [];
@@ -116,12 +140,100 @@ app.post('/api/analyze', async (req, res) => {
         const h5Matches = htmlContent.match(h5Regex) || [];
         const h6Matches = htmlContent.match(h6Regex) || [];
         
-        const h1Count = h1Matches.length;
-        const h2Count = h2Matches.length;
-        const h3Count = h3Matches.length;
-        const h4Count = h4Matches.length;
-        const h5Count = h5Matches.length;
-        const h6Count = h6Matches.length;
+        console.log('Regex found H1 tags:', h1Matches.length);
+        h1Matches.forEach((match, i) => {
+            if (i < 3) console.log(`Regex H1 #${i+1}:`, match.substring(0, 100) + (match.length > 100 ? '...' : ''));
+        });
+        console.log('Regex found H2 tags:', h2Matches.length);
+        h2Matches.forEach((match, i) => {
+            if (i < 3) console.log(`Regex H2 #${i+1}:`, match.substring(0, 100) + (match.length > 100 ? '...' : ''));
+        });
+        
+        // Method 3: Try a more aggressive search with alternate patterns
+        // This can help with pages that use custom components or have malformed HTML
+        try {
+            // Look for any tag that might be styled as a heading or have heading-like properties
+            const potentialHeadingElements = $('[role="heading"], .heading, .title, .header, .h1, .h2, .h3');
+            console.log('Potential additional heading elements found:', potentialHeadingElements.length);
+            
+            if (potentialHeadingElements.length > 0) {
+                potentialHeadingElements.each((i, el) => {
+                    if (i < 3) console.log(`Potential heading #${i+1}:`, $(el).text());
+                });
+            }
+        } catch (error) {
+            console.error('Error in heading detection method 3:', error.message);
+        }
+        
+        // Method 4: Count any tag containing "h1", "h2" case-insensitively
+        try {
+            // This approach could catch customized heading tags like <custom-h1>
+            const customH1Regex = /<[^>]*h1[^>]*>[\s\S]*?<\/[^>]*h1[^>]*>/gi;
+            const customH2Regex = /<[^>]*h2[^>]*>[\s\S]*?<\/[^>]*h2[^>]*>/gi;
+            const customH1Matches = htmlContent.match(customH1Regex) || [];
+            const customH2Matches = htmlContent.match(customH2Regex) || [];
+            
+            console.log('Custom H1 tags found:', customH1Matches.length);
+            console.log('Custom H2 tags found:', customH2Matches.length);
+        } catch (error) {
+            console.error('Error in heading detection method 4:', error.message);
+        }
+        
+        // Method 5: Use HTML comment stripping and brute-force regex approach
+        // This can help with complex nested HTML or websites with JavaScript rendering
+        try {
+            // Strip HTML comments that might contain heading tags but aren't rendered
+            const strippedHtml = htmlContent.replace(/<!--[\s\S]*?-->/g, '');
+            
+            // Super aggressive regex patterns that are very permissive
+            const bruteH1Regex = /<h1[^>]*>[\s\S]*?<\/h1>/gi;
+            const bruteH2Regex = /<h2[^>]*>[\s\S]*?<\/h2>/gi;
+            
+            const bruteH1Matches = strippedHtml.match(bruteH1Regex) || [];
+            const bruteH2Matches = strippedHtml.match(bruteH2Regex) || [];
+            
+            console.log('Brute force H1 tags found:', bruteH1Matches.length);
+            console.log('Brute force H2 tags found:', bruteH2Matches.length);
+            
+            // Check for significant differences between methods
+            if (bruteH1Matches.length > h1CountCheerio && bruteH1Matches.length > h1Matches.length) {
+                console.log('Brute force method found more H1 tags than other methods');
+                h1CountCheerio = bruteH1Matches.length; // Use this higher count
+            }
+            
+            if (bruteH2Matches.length > h2CountCheerio && bruteH2Matches.length > h2Matches.length) {
+                console.log('Brute force method found more H2 tags than other methods');
+                h2CountCheerio = bruteH2Matches.length; // Use this higher count
+            }
+        } catch (error) {
+            console.error('Error in heading detection method 5:', error.message);
+        }
+        
+        // Use the higher count from all methods with additional safeguards
+        // If there's a large discrepancy, log explanations and use the highest count
+        
+        // Additional check: directly search in the raw HTML for probable h2/h3 tags
+        // Some sites use non-standard HTML that might confuse parsers
+        const rawH2Count = (htmlContent.match(/<h2/gi) || []).length;
+        const rawH3Count = (htmlContent.match(/<h3/gi) || []).length;
+        console.log('Raw HTML tag counts:', { rawH2: rawH2Count, rawH3: rawH3Count });
+        
+        // Final counts: take the maximum of all counting methods
+        const h1Count = Math.max(h1CountCheerio, h1Matches.length);
+        const h2Count = Math.max(h2CountCheerio, h2Matches.length, rawH2Count);
+        const h3Count = Math.max(h3CountCheerio, h3Matches.length, rawH3Count);
+        const h4Count = Math.max(h4CountCheerio, h4Matches.length);
+        const h5Count = Math.max(h5CountCheerio, h5Matches.length);
+        const h6Count = Math.max(h6CountCheerio, h6Matches.length);
+        
+        console.log('FINAL HEADING COUNTS:', { h1: h1Count, h2: h2Count, h3: h3Count, h4: h4Count, h5: h5Count, h6: h6Count });
+        
+        if (Math.abs(h1CountCheerio - h1Matches.length) > 2) {
+            console.log('WARNING: Large discrepancy in H1 count between methods!');
+        }
+        if (Math.abs(h2CountCheerio - h2Matches.length) > 5) {
+            console.log('WARNING: Large discrepancy in H2 count between methods!');
+        }
 
         // Get first H1 text if it exists
         let h1Text = '';
