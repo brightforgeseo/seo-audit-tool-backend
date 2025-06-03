@@ -93,6 +93,7 @@ app.post('/api/analyze', async (req, res) => {
         
         console.log('Extracted title:', title);
         const metaDescription = $('meta[name="description"]').attr('content') || '';
+        const viewportMeta = $('meta[name="viewport"]').attr('content') || '';
         // Improve heading detection with more robust selectors
         const h1Count = $('h1').length;
         const h1Text = $('h1').first().text() || '';
@@ -110,7 +111,6 @@ app.post('/api/analyze', async (req, res) => {
         const externalLinks = $('a[href^="http"]:not([href^="' + url + '"]):not([href^="http://' + new URL(url).hostname + '"]):not([href^="https://' + new URL(url).hostname + '"])').length;
         const canonicalUrl = $('link[rel="canonical"]').attr('href') || '';
         const robotsMeta = $('meta[name="robots"]').attr('content') || '';
-        const viewportMeta = $('meta[name="viewport"]').attr('content') || '';
         const keywordsMeta = $('meta[name="keywords"]').attr('content') || '';
         const headings = {
             h1: h1Count,
@@ -121,21 +121,27 @@ app.post('/api/analyze', async (req, res) => {
             h6: h6Count
         };
         
-        // Check for SSL
+        // Check for SSL - safely get it from the original URL
+        // Axios response structure may vary between environments
         const hasSSL = url.startsWith('https://');
+        console.log('SSL check:', { originalUrl: url, hasSSL });
         
+        // Initialize values with defaults to avoid undefined
         // Analyze page load speed factors
-        const scriptCount = $('script').length;
-        const cssCount = $('link[rel="stylesheet"]').length;
-        const inlineStyles = $('style').length;
+        const scriptCount = $('script').length || 0;
+        const cssCount = $('link[rel="stylesheet"]').length || 0;
+        const inlineStyles = $('style').length || 0;
+        console.log('Resource counts:', { scripts: scriptCount, css: cssCount, styles: inlineStyles });
         
         // Check for social media meta tags
-        const openGraphTags = $('meta[property^="og:"]').length;
-        const twitterTags = $('meta[name^="twitter:"]').length;
+        const openGraphTags = $('meta[property^="og:"]').length || 0;
+        const twitterTags = $('meta[name^="twitter:"]').length || 0;
         const socialMediaTags = openGraphTags + twitterTags;
+        console.log('Social tags:', { openGraph: openGraphTags, twitter: twitterTags, total: socialMediaTags });
         
-        // Mobile friendliness check
-        const hasMobileViewport = viewportMeta.includes('width=device-width');
+        // Mobile friendliness check - more detailed
+        const hasMobileViewport = typeof viewportMeta === 'string' && viewportMeta.includes('width=device-width');
+        console.log('Mobile viewport:', { meta: viewportMeta, hasMobileViewport });
 
         res.json({
             url,

@@ -554,16 +554,21 @@
                         </div>
                         <div class="analysis-item">
                             <div class="analysis-label">SSL / HTTPS</div>
-                            <div class="analysis-value">${analysis.hasSSL ? 'Secure HTTPS connection' : 'Insecure HTTP connection'}</div>
-                            <div class="analysis-indicator ${analysis.hasSSL ? 'good-indicator' : 'bad-indicator'}">
-                                ${analysis.hasSSL ? 'Good: Site uses secure HTTPS connection' : 'Critical: Site is not using secure HTTPS connection'}
+                            <div class="analysis-value">
+                                ${analysis.hasSSL === true ? 'Secure HTTPS connection' : 'Insecure HTTP connection'}
+                            </div>
+                            <div class="analysis-indicator ${analysis.hasSSL === true ? 'good-indicator' : 'bad-indicator'}">
+                                ${analysis.hasSSL === true ? 'Good: Site is using secure HTTPS connection' : 'Critical: Site is not using secure HTTPS connection'}
                             </div>
                         </div>
+                        
                         <div class="analysis-item">
                             <div class="analysis-label">Mobile Friendliness</div>
-                            <div class="analysis-value">${analysis.hasMobileViewport ? 'Mobile viewport meta tag is present' : 'No mobile viewport meta tag found'}</div>
-                            <div class="analysis-indicator ${analysis.hasMobileViewport ? 'good-indicator' : 'bad-indicator'}">
-                                ${analysis.hasMobileViewport ? 'Good: Page is configured for mobile devices' : 'Critical: Page is not configured for mobile devices'}
+                            <div class="analysis-value">
+                                ${analysis.hasMobileViewport === true ? 'Mobile viewport meta tag found' : 'No mobile viewport meta tag found'}
+                            </div>
+                            <div class="analysis-indicator ${analysis.hasMobileViewport === true ? 'good-indicator' : 'bad-indicator'}">
+                                ${analysis.hasMobileViewport === true ? 'Good: Page is configured for mobile devices' : 'Critical: Page is not configured for mobile devices'}
                             </div>
                         </div>
                         
@@ -571,12 +576,12 @@
                         <div class="analysis-item">
                             <div class="analysis-label">Page Resources</div>
                             <div class="analysis-value">
-                                <strong>Scripts:</strong> ${analysis.scriptCount}<br>
-                                <strong>Stylesheets:</strong> ${analysis.cssCount}<br>
-                                <strong>Inline Styles:</strong> ${analysis.inlineStyles}
+                                <strong>Scripts:</strong> ${analysis.scriptCount || 0}<br>
+                                <strong>Stylesheets:</strong> ${analysis.cssCount || 0}<br>
+                                <strong>Inline Styles:</strong> ${analysis.inlineStyles || 0}
                             </div>
-                            <div class="analysis-indicator ${getPerformanceIndicatorClass(analysis.scriptCount, analysis.cssCount)}">
-                                ${getPerformanceRecommendation(analysis.scriptCount, analysis.cssCount)}
+                            <div class="analysis-indicator ${getPerformanceIndicatorClass(analysis.scriptCount || 0, analysis.cssCount || 0)}">
+                                ${getPerformanceRecommendation(analysis.scriptCount || 0, analysis.cssCount || 0)}
                             </div>
                         </div>
                         
@@ -584,12 +589,12 @@
                         <div class="analysis-item">
                             <div class="analysis-label">Social Media Tags</div>
                             <div class="analysis-value">
-                                <strong>Open Graph Tags:</strong> ${analysis.openGraphTags}<br>
-                                <strong>Twitter Card Tags:</strong> ${analysis.twitterTags}<br>
-                                <strong>Total:</strong> ${analysis.socialMediaTags}
+                                <strong>Open Graph Tags:</strong> ${analysis.openGraphTags || 0}<br>
+                                <strong>Twitter Card Tags:</strong> ${analysis.twitterTags || 0}<br>
+                                <strong>Total:</strong> ${analysis.socialMediaTags || 0}
                             </div>
-                            <div class="analysis-indicator ${getSocialMediaIndicatorClass(analysis.socialMediaTags)}">
-                                ${getSocialMediaRecommendation(analysis.socialMediaTags)}
+                            <div class="analysis-indicator ${getSocialMediaIndicatorClass(analysis.socialMediaTags || 0)}">
+                                ${getSocialMediaRecommendation(analysis.socialMediaTags || 0)}
                             </div>
                         </div>
                     `;
