@@ -508,8 +508,8 @@
     </div>
 
     <script>
-        // Using the local backend API URL for testing
-        const API_URL = 'http://localhost:3000/api/analyze';
+        // Use a relative URL that works in both development and production
+        const API_URL = '/api/analyze';
 
         document.getElementById('auditForm').addEventListener('submit', async (event) => {
             event.preventDefault();
