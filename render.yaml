@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: seo-audit-tool
+    env: node
+    buildCommand: npm install --production
+    startCommand: node api/audit.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /health
+    autoDeploy: true 

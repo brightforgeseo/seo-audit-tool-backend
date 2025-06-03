@@ -1,0 +1,18 @@
+{
+  "name": "seo-audit-tool",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "api/audit.js",
+  "scripts": {
+    "start": "node api/audit.js"
+  },
+  "dependencies": {
+    "express": "4.18.2",
+    "cors": "2.8.5",
+    "cheerio": "1.0.0-rc.12",
+    "axios": "1.6.7"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}
