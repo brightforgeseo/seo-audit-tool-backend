@@ -76,7 +76,20 @@
             box-shadow: 0 4px 10px rgba(255,68,56,0.1);
             transition: all 0.3s ease;
             position: relative;
-            overflow: hidden;
+        }
+        .highlight-card {
+            background: var(--brand-gradient);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(255,68,56,0.2);
+        }
+        .score-description {
+            font-size: 12px;
+            margin-top: 8px;
+            opacity: 0.8;
+        }
+        .highlight-card .score-description {
+            color: rgba(255,255,255,0.9);
         }
         .score-card::before {
             content: '';
@@ -90,10 +103,6 @@
             transform-origin: left;
             transition: transform 0.5s ease;
         }
-        .score-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(255,68,56,0.15);
-        }
         .score-card:hover::before {
             transform: scaleX(1);
         }
@@ -101,7 +110,15 @@
             font-size: 36px;
             font-weight: bold;
             margin: 10px 0;
-            color: var(--brand-accent);
+            position: relative;
+            z-index: 2;
+        }
+        .score-value small {
+            font-size: 14px;
+            font-weight: normal;
+            opacity: 0.8;
+            display: block;
+            margin-top: 5px;
         }
         .score-label {
             color: var(--brand-soft);
@@ -332,20 +349,24 @@
         <div id="results" class="results">
             <div class="score-grid">
                 <div class="score-card">
-                    <div class="score-label">Title Length</div>
-                    <div id="titleScore" class="score-value">-</div>
+                    <div class="score-label">On-page SEO Score</div>
+                    <div id="onPageScore" class="score-value">-</div>
+                    <div class="score-description">Title, Meta Tags, Headings, Internal Links</div>
                 </div>
                 <div class="score-card">
-                    <div class="score-label">Meta Description</div>
-                    <div id="metaScore" class="score-value">-</div>
+                    <div class="score-label">Technical SEO Score</div>
+                    <div id="technicalScore" class="score-value">-</div>
+                    <div class="score-description">HTTPS, Mobile, Performance, Structure</div>
                 </div>
                 <div class="score-card">
-                    <div class="score-label">Image Alt Text</div>
-                    <div id="imgAltScore" class="score-value">-</div>
+                    <div class="score-label">Content Score</div>
+                    <div id="contentScore" class="score-value">-</div>
+                    <div class="score-description">Images, Media, Text Optimization</div>
                 </div>
-                <div class="score-card">
-                    <div class="score-label">Overall Score</div>
+                <div class="score-card highlight-card">
+                    <div class="score-label">Overall SEO Score</div>
                     <div id="overallScore" class="score-value">-</div>
+                    <div class="score-description">Comprehensive Assessment</div>
                 </div>
             </div>
             <div class="analysis-details">
@@ -413,71 +434,134 @@
                 // Process data from our backend API
                 if (data && data.analysis) {
                     const analysis = data.analysis;
+                    // Process the SEO data
+                    const titleElement = document.createElement('div');
+                    titleElement.textContent = analysis.title || 'No title found';
                     
-                    // Calculate scores based on the data
-                    const titleLength = analysis.title ? analysis.title.length : 0;
-                    const titleScore = calculateTitleScore(titleLength);
+                    const descriptionElement = document.createElement('div');
+                    descriptionElement.textContent = analysis.metaDescription || 'No meta description found';
                     
-                    const metaDescLength = analysis.metaDescription ? analysis.metaDescription.length : 0;
-                    const metaScore = calculateMetaScore(metaDescLength);
+                    // Calculate title & meta description length
+                    const titleLength = titleElement.textContent.length;
+                    const metaDescLength = descriptionElement ? descriptionElement.textContent.length : 0;
                     
-                    const imgAltPercent = analysis.imgCount > 0 
-                        ? Math.round((analysis.imgWithAltCount / analysis.imgCount) * 100) 
-                        : 0;
-                    const imgAltScore = calculateImgAltScore(imgAltPercent);
+                    // Handle image alt text
+                    const totalImages = analysis.totalImages || 0;
+                    const imagesWithAlt = analysis.imagesWithAlt || [];
+                    const imgAltPercent = imagesWithAlt.length > 0 ? Math.round((imagesWithAlt.length / totalImages) * 100) : 0;
                     
-                    // Calculate overall score
-                    let scorePoints = 0;
-                    let totalPoints = 0;
+                    console.log('Calculating comprehensive SEO scores...');
                     
-                    // Title score (max 10 points)
-                    if (titleScore === 'A') scorePoints += 10;
-                    else if (titleScore === 'B') scorePoints += 7;
-                    else scorePoints += 3;
-                    totalPoints += 10;
+                    // Additional data processing
+                    const hasCanonical = analysis.canonicalUrl ? true : false;
+                    const hasRobotsMeta = analysis.robotsMeta ? true : false;
+                    const internalLinksCount = analysis.internalLinks || 0;
+                    const externalLinksCount = analysis.externalLinks || 0;
+                    const hasSSL = analysis.hasSSL || false;
+                    const hasMobileViewport = analysis.hasMobileViewport || false;
+                    const scriptCount = analysis.scripts || 0;
+                    const stylesheetCount = analysis.stylesheets || 0;
+                    const socialMediaTags = (analysis.openGraphTags || 0) + (analysis.twitterCardTags || 0);
                     
-                    // Meta description score (max 10 points)
-                    if (metaScore === 'A') scorePoints += 10;
-                    else if (metaScore === 'B') scorePoints += 7;
-                    else scorePoints += 3;
-                    totalPoints += 10;
+                    // Estimate text-to-code ratio and keyword density if not provided
+                    const textToCodeRatio = analysis.textToCodeRatio || 0.3; // default estimate
+                    const keywordDensity = analysis.keywordDensity || 1.5; // default estimate
                     
-                    // Image alt text score (max 10 points)
-                    if (imgAltPercent >= 80) scorePoints += 10;
-                    else if (imgAltPercent >= 50) scorePoints += 7;
-                    else scorePoints += 3;
-                    totalPoints += 10;
+                    // Calculate individual metrics scores (0-100)
+                    const titleScoreValue = calculateTitleScore(titleLength);
+                    const metaScoreValue = calculateMetaScore(metaDescLength);
+                    const h1ScoreValue = calculateH1Score(analysis.h1Count || 0);
+                    const headingStructureScore = calculateHeadingStructureScore(analysis);
+                    const internalLinkScore = calculateInternalLinkScore(internalLinksCount);
+                    const externalLinkScore = calculateExternalLinkScore(externalLinksCount);
+                    const imgAltScoreValue = calculateImgAltScore(imgAltPercent);
+                    const sslScore = calculateSSLScore(hasSSL);
+                    const mobileScore = calculateMobileScore(hasMobileViewport);
+                    const performanceScore = calculatePerformanceScore(scriptCount, stylesheetCount);
+                    const canonicalScore = calculateCanonicalScore(hasCanonical);
+                    const robotsScore = calculateRobotsScore(hasRobotsMeta);
+                    const socialMediaScore = calculateSocialMediaScore(analysis);
+                    const contentLengthScore = calculateContentLengthScore(textToCodeRatio);
+                    const keywordScore = calculateKeywordScore(keywordDensity);
+                    const mediaScore = calculateMediaScore(totalImages, analysis.totalVideos || 0);
                     
-                    // H1 tag (max 5 points)
-                    if (analysis.h1Count === 1) scorePoints += 5;
-                    else if (analysis.h1Count > 0) scorePoints += 2;
-                    totalPoints += 5;
+                    // Log individual scores for debugging
+                    console.log('Individual Scores:', {
+                        title: titleScoreValue,
+                        meta: metaScoreValue,
+                        h1: h1ScoreValue,
+                        headingStructure: headingStructureScore,
+                        internalLinks: internalLinkScore,
+                        externalLinks: externalLinkScore,
+                        imgAlt: imgAltScoreValue,
+                        ssl: sslScore,
+                        mobile: mobileScore,
+                        performance: performanceScore,
+                        canonical: canonicalScore,
+                        robots: robotsScore,
+                        socialMedia: socialMediaScore,
+                        contentLength: contentLengthScore,
+                        keyword: keywordScore,
+                        media: mediaScore
+                    });
                     
-                    // SSL (max 5 points)
-                    if (analysis.hasSSL) scorePoints += 5;
-                    totalPoints += 5;
+                    // Calculate category scores
+                    const onPageScore = calculateAverageScore([
+                        titleScoreValue, 
+                        metaScoreValue, 
+                        h1ScoreValue, 
+                        headingStructureScore,
+                        internalLinkScore,
+                        externalLinkScore
+                    ]);
                     
-                    // Mobile viewport (max 5 points)
-                    if (analysis.hasMobileViewport) scorePoints += 5;
-                    totalPoints += 5;
+                    const technicalScore = calculateAverageScore([
+                        sslScore,
+                        mobileScore,
+                        performanceScore,
+                        canonicalScore,
+                        robotsScore
+                    ]);
                     
-                    // Canonical URL (max 5 points)
-                    if (analysis.canonicalUrl) scorePoints += 5;
-                    totalPoints += 5;
+                    const contentScore = calculateAverageScore([
+                        imgAltScoreValue,
+                        contentLengthScore,
+                        keywordScore,
+                        mediaScore,
+                        socialMediaScore
+                    ]);
                     
-                    // Social media tags (max 5 points)
-                    if (analysis.socialMediaTags > 5) scorePoints += 5;
-                    else if (analysis.socialMediaTags > 0) scorePoints += 3;
-                    totalPoints += 5;
+                    // Calculate overall score (weighted average)
+                    const overallScore = Math.round(
+                        (onPageScore * 0.4) + 
+                        (technicalScore * 0.3) + 
+                        (contentScore * 0.3)
+                    );
                     
-                    // Calculate percentage
-                    const overallScore = Math.round((scorePoints / totalPoints) * 100);
+                    console.log('Category Scores:', {
+                        onPage: onPageScore,
+                        technical: technicalScore,
+                        content: contentScore,
+                        overall: overallScore
+                    });
+
+                    // Convert numeric scores to letter grades
+                    const onPageGrade = getLetterGrade(onPageScore);
+                    const technicalGrade = getLetterGrade(technicalScore);
+                    const contentGrade = getLetterGrade(contentScore);
+                    const overallGrade = getLetterGrade(overallScore);
                     
-                    // Update scores
-                    document.getElementById('titleScore').textContent = titleScore;
-                    document.getElementById('metaScore').textContent = metaScore;
-                    document.getElementById('imgAltScore').textContent = imgAltScore + '%';
-                    document.getElementById('overallScore').textContent = overallScore + '%';
+                    // Display category scores
+                    document.getElementById('onPageScore').textContent = onPageGrade;
+                    document.getElementById('technicalScore').textContent = technicalGrade;
+                    document.getElementById('contentScore').textContent = contentGrade;
+                    document.getElementById('overallScore').textContent = overallGrade;
+                    
+                    // Add percentage to score cards with small text
+                    document.getElementById('onPageScore').innerHTML = `${onPageGrade} <small>${onPageScore}%</small>`;
+                    document.getElementById('technicalScore').innerHTML = `${technicalGrade} <small>${technicalScore}%</small>`;
+                    document.getElementById('contentScore').innerHTML = `${contentGrade} <small>${contentScore}%</small>`;
+                    document.getElementById('overallScore').innerHTML = `${overallGrade} <small>${overallScore}%</small>`;
                     
                     // Populate analysis details
                     const analysisDetails = document.getElementById('analysisDetails');
@@ -614,20 +698,153 @@
         });
         
         // Helper functions for scoring and recommendations
+        // All scoring functions return a numeric score from 0-100
+        
+        // On-Page SEO scoring functions
         function calculateTitleScore(length) {
-            if (length >= 30 && length <= 60) return 'A';
-            if ((length >= 15 && length < 30) || (length > 60 && length <= 80)) return 'B';
-            return 'C';
+            if (length >= 30 && length <= 60) return 100;
+            if ((length >= 20 && length < 30) || (length > 60 && length <= 70)) return 80;
+            if ((length >= 10 && length < 20) || (length > 70 && length <= 80)) return 60;
+            if (length > 0) return 30;
+            return 0;
         }
         
         function calculateMetaScore(length) {
-            if (length >= 120 && length <= 160) return 'A';
-            if ((length >= 80 && length < 120) || (length > 160 && length <= 200)) return 'B';
-            return 'C';
+            if (length >= 120 && length <= 160) return 100;
+            if ((length >= 100 && length < 120) || (length > 160 && length <= 180)) return 80;
+            if ((length >= 80 && length < 100) || (length > 180 && length <= 200)) return 60;
+            if (length > 0) return 30;
+            return 0;
         }
         
+        function calculateH1Score(count) {
+            if (count === 1) return 100;
+            if (count === 2) return 70;
+            if (count > 2) return 40;
+            return 0;
+        }
+        
+        function calculateHeadingStructureScore(analysis) {
+            // Check for proper heading hierarchy (h1, h2, h3, etc.)
+            const h1 = analysis.h1Count || 0;
+            const h2 = analysis.h2Count || 0;
+            const h3 = analysis.h3Count || 0;
+            
+            // Ideal structure: 1 H1, some H2s, some H3s
+            if (h1 === 1 && h2 >= 2 && h3 >= 1) return 100;
+            if (h1 === 1 && h2 >= 1) return 80;
+            if (h1 === 1) return 60;
+            if (h1 > 1) return 40;
+            return 0;
+        }
+        
+        function calculateInternalLinkScore(count) {
+            // Higher is better for internal linking
+            if (count >= 10) return 100;
+            if (count >= 7) return 90;
+            if (count >= 5) return 80;
+            if (count >= 3) return 60;
+            if (count >= 1) return 40;
+            return 0;
+        }
+        
+        function calculateExternalLinkScore(count) {
+            // Some external links are good for SEO
+            if (count >= 3 && count <= 10) return 100;
+            if (count > 10) return 80; // Too many might be excessive
+            if (count >= 1) return 70;
+            return 40; // No external links - not ideal but not terrible
+        }
+        
+        // Technical SEO scoring functions
+        function calculateSSLScore(hasSSL) {
+            return hasSSL ? 100 : 0;
+        }
+        
+        function calculateMobileScore(hasMobileViewport) {
+            return hasMobileViewport ? 100 : 0;
+        }
+        
+        function calculatePerformanceScore(scriptCount, stylesheetCount) {
+            // Lower is better for performance (fewer scripts/stylesheets)
+            const totalResources = (scriptCount || 0) + (stylesheetCount || 0);
+            if (totalResources <= 10) return 100;
+            if (totalResources <= 20) return 80;
+            if (totalResources <= 30) return 60;
+            if (totalResources <= 40) return 40;
+            return 20;
+        }
+        
+        function calculateCanonicalScore(hasCanonical) {
+            return hasCanonical ? 100 : 0;
+        }
+        
+        function calculateRobotsScore(hasRobotsMeta) {
+            return hasRobotsMeta ? 100 : 40; // Not having robots is not ideal but not terrible
+        }
+        
+        // Content scoring functions
         function calculateImgAltScore(percent) {
-            return percent;
+            return percent; // 0-100 already
+        }
+        
+        function calculateContentLengthScore(textToCodeRatio) {
+            // Higher text-to-code ratio is better
+            if (textToCodeRatio >= 0.4) return 100;
+            if (textToCodeRatio >= 0.3) return 80;
+            if (textToCodeRatio >= 0.2) return 60;
+            if (textToCodeRatio >= 0.1) return 40;
+            return 20;
+        }
+        
+        function calculateKeywordScore(density) {
+            // Ideal keyword density is 1-3%
+            if (density >= 1 && density <= 3) return 100;
+            if (density > 3 && density <= 4) return 70; // Too high
+            if (density > 0 && density < 1) return 70; // Too low
+            if (density > 4) return 40; // Keyword stuffing
+            return 20; // No keywords detected
+        }
+        
+        function calculateMediaScore(imageCount, videoCount) {
+            // Having media is good for engagement
+            const totalMedia = (imageCount || 0) + (videoCount || 0);
+            if (totalMedia >= 5) return 100;
+            if (totalMedia >= 3) return 80;
+            if (totalMedia >= 1) return 60;
+            return 20;
+        }
+        
+        function calculateSocialMediaScore(analysis) {
+            // Check for open graph and twitter card tags
+            const hasOG = (analysis.openGraphTags && analysis.openGraphTags > 0) ? true : false;
+            const hasTwitter = (analysis.twitterCardTags && analysis.twitterCardTags > 0) ? true : false;
+            
+            if (hasOG && hasTwitter) return 100;
+            if (hasOG || hasTwitter) return 70;
+            return 0;
+        }
+        
+        // Utility functions
+        function calculateAverageScore(scores) {
+            if (!scores || scores.length === 0) return 0;
+            const sum = scores.reduce((total, score) => total + score, 0);
+            return Math.round(sum / scores.length);
+        }
+        
+        function getLetterGrade(score) {
+            if (score >= 90) return 'A+';
+            if (score >= 85) return 'A';
+            if (score >= 80) return 'A-';
+            if (score >= 75) return 'B+';
+            if (score >= 70) return 'B';
+            if (score >= 65) return 'B-';
+            if (score >= 60) return 'C+';
+            if (score >= 55) return 'C';
+            if (score >= 50) return 'C-';
+            if (score >= 45) return 'D+';
+            if (score >= 40) return 'D';
+            return 'F';
         }
         
         function getTitleIndicatorClass(length) {

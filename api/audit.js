@@ -275,6 +275,39 @@ app.post('/api/analyze', async (req, res) => {
         const inlineStyles = $('style').length || 0;
         console.log('Resource counts:', { scripts: scriptCount, css: cssCount, styles: inlineStyles });
         
+        // Calculate text-to-code ratio for content quality assessment
+        const bodyText = $('body').text();
+        const textLength = bodyText.length;
+        const htmlLength = htmlContent.length;
+        const textToCodeRatio = textLength / htmlLength;
+        console.log('Content quality:', { textLength, htmlLength, textToCodeRatio });
+        
+        // Count media elements for content richness
+        const totalImages = imgCount || 0;
+        const totalVideos = $('video, iframe[src*="youtube"], iframe[src*="vimeo"]').length || 0;
+        console.log('Media elements:', { images: totalImages, videos: totalVideos });
+        
+        // Check for structured data
+        const structuredDataCount = $('script[type="application/ld+json"]').length || 0;
+        
+        // Estimate keyword density (simplified approach)
+        let keywordDensity = 0;
+        if (title && bodyText) {
+            // Extract potential keywords from title
+            const potentialKeywords = title.toLowerCase().split(/\s+/)
+                .filter(word => word.length > 3) // Only consider words larger than 3 chars
+                .filter(word => !['and', 'the', 'for', 'with'].includes(word)); // Remove common words
+            
+            if (potentialKeywords.length > 0) {
+                // Count occurrences of the first potential keyword in body text
+                const keyword = potentialKeywords[0];
+                const keywordRegex = new RegExp(keyword, 'gi');
+                const matches = bodyText.match(keywordRegex) || [];
+                keywordDensity = (matches.length / (bodyText.split(/\s+/).length || 1)) * 100;
+            }
+        }
+        console.log('Keyword density estimation:', keywordDensity.toFixed(2) + '%');
+        
         // Check for social media meta tags
         const openGraphTags = $('meta[property^="og:"]').length || 0;
         const twitterTags = $('meta[name^="twitter:"]').length || 0;
@@ -318,6 +351,13 @@ app.post('/api/analyze', async (req, res) => {
                 scriptCount,
                 cssCount,
                 inlineStyles,
+                
+                // Content Quality Metrics
+                textToCodeRatio,
+                keywordDensity,
+                totalImages: imgCount,
+                totalVideos,
+                structuredDataCount,
                 
                 // Social Media
                 socialMediaTags,
