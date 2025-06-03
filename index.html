@@ -508,10 +508,10 @@
     </div>
 
     <script>
-        // Dynamically determine API URL based on environment
+        // Use the correct API URL for each environment
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3000/api/analyze'  // Development environment
-            : '/api/analyze';  // Production environment
+            : 'https://seo-audit-tool-backend.onrender.com/api/analyze';  // Production environment - direct Render URL
             
         console.log('Using API URL:', API_URL);
 
@@ -556,9 +556,12 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache'
+                        'Cache-Control': 'no-cache',
+                        'Origin': window.location.origin
                     },
-                    body: JSON.stringify({ url: urlInput.value })
+                    body: JSON.stringify({ url: urlInput.value }),
+                    mode: 'cors',
+                    credentials: 'omit'
                 });
                 
                 if (!response.ok) {
