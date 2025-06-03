@@ -45,10 +45,22 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Health check endpoint
+// Enhanced health check endpoint for better Render monitoring
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        nodeVersion: process.version,
+        environment: process.env.NODE_ENV || 'development'
+    });
 });
+
+// Keep-alive ping every 5 minutes to prevent idle timeout
+setInterval(() => {
+    console.log(`[${new Date().toISOString()}] Server keep-alive ping. Uptime: ${Math.floor(process.uptime() / 60)} minutes`);
+}, 300000); // 5 minutes
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -63,8 +75,24 @@ app.get('/', (req, res) => {
 
 // SEO Analysis endpoint
 app.post('/api/analyze', async (req, res) => {
+    const url = req.body.url;
+    const requestId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+    
+    console.log(`[${requestId}] Analyzing URL: ${url}`);
+    
+    // Validate URL
+    if (!url || typeof url !== 'string') {
+        console.error(`[${requestId}] Invalid URL provided:`, url);
+        return res.status(400).json({ error: 'Invalid URL provided' });
+    }
+    
+    // Set a timeout for the request
+    const timeout = setTimeout(() => {
+        console.error(`[${requestId}] Request timed out after 30 seconds for URL: ${url}`);
+        return res.status(504).json({ error: 'Request timed out. The website may be too slow to respond.' });
+    }, 30000); // 30 second timeout
+    
     try {
-        const { url } = req.body;
         if (!url) {
             return res.status(400).json({ error: 'URL is required' });
         }
@@ -318,6 +346,9 @@ app.post('/api/analyze', async (req, res) => {
         const hasMobileViewport = typeof viewportMeta === 'string' && viewportMeta.includes('width=device-width');
         console.log('Mobile viewport:', { meta: viewportMeta, hasMobileViewport });
 
+        // Clear the timeout since the request completed successfully
+        clearTimeout(timeout);
+        
         res.json({
             url,
             analysis: {
@@ -369,19 +400,52 @@ app.post('/api/analyze', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error:', error);
+        // Clear the timeout since the request completed (with an error)
+        clearTimeout(timeout);
+
+        console.error(`[${requestId}] Error analyzing URL:`, error.message);
+
+        // Provide more specific error messages based on the error type
+        if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+            return res.status(400).json({ 
+                error: 'Could not connect to the website. Please check the URL and try again.'
+            });
+        } else if (error.response && error.response.status) {
+            return res.status(error.response.status).json({ 
+                error: `Website returned an error: ${error.response.status} ${error.response.statusText}`
+            });
+        }
+
         res.status(500).json({ 
-            error: error.message,
-            timestamp: new Date().toISOString()
+            error: 'Failed to analyze URL', 
+            message: error.message 
         });
     }
 });
+// Global error handlers to prevent crashes
+process.on('uncaughtException', (error) => {
+    console.error('UNCAUGHT EXCEPTION! 💥 Shutting down gracefully...', error);
+    console.error(error.name, error.message, error.stack);
+    // Give the server 3 seconds to finish current requests before shutting down
+    setTimeout(() => {
+        process.exit(1);
+    }, 3000);
+});
 
-// Start server
+process.on('unhandledRejection', (error) => {
+    console.error('UNHANDLED REJECTION! 💥 Shutting down gracefully...', error);
+    // Give the server 3 seconds to finish current requests before shutting down
+    setTimeout(() => {
+        process.exit(1);
+    }, 3000);
+});
+
+// Start server with improved error logging
 const server = app.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
     console.log(`Node version: ${process.version}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log('Server configured with improved reliability for Render deployment');
 });
 
 // Handle graceful shutdown
