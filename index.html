@@ -64,16 +64,38 @@
         }
         .score-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             margin-bottom: 30px;
         }
         .score-card {
             background: var(--brand-accent-light);
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 12px;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(255,68,56,0.07);
+            box-shadow: 0 4px 10px rgba(255,68,56,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .score-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--brand-gradient);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s ease;
+        }
+        .score-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(255,68,56,0.15);
+        }
+        .score-card:hover::before {
+            transform: scaleX(1);
         }
         .score-value {
             font-size: 36px;
@@ -253,9 +275,14 @@
         .analysis-item {
             background: #fff;
             padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(255,68,56,0.07);
+            margin-bottom: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(255,68,56,0.08);
+            transition: all 0.3s ease;
+        }
+        .analysis-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(255,68,56,0.12);
         }
         .analysis-label {
             font-weight: bold;
@@ -315,6 +342,10 @@
                 <div class="score-card">
                     <div class="score-label">Image Alt Text</div>
                     <div id="imgAltScore" class="score-value">-</div>
+                </div>
+                <div class="score-card">
+                    <div class="score-label">Overall Score</div>
+                    <div id="overallScore" class="score-value">-</div>
                 </div>
             </div>
             <div class="analysis-details">
@@ -395,14 +426,64 @@
                         : 0;
                     const imgAltScore = calculateImgAltScore(imgAltPercent);
                     
+                    // Calculate overall score
+                    let scorePoints = 0;
+                    let totalPoints = 0;
+                    
+                    // Title score (max 10 points)
+                    if (titleScore === 'A') scorePoints += 10;
+                    else if (titleScore === 'B') scorePoints += 7;
+                    else scorePoints += 3;
+                    totalPoints += 10;
+                    
+                    // Meta description score (max 10 points)
+                    if (metaScore === 'A') scorePoints += 10;
+                    else if (metaScore === 'B') scorePoints += 7;
+                    else scorePoints += 3;
+                    totalPoints += 10;
+                    
+                    // Image alt text score (max 10 points)
+                    if (imgAltPercent >= 80) scorePoints += 10;
+                    else if (imgAltPercent >= 50) scorePoints += 7;
+                    else scorePoints += 3;
+                    totalPoints += 10;
+                    
+                    // H1 tag (max 5 points)
+                    if (analysis.h1Count === 1) scorePoints += 5;
+                    else if (analysis.h1Count > 0) scorePoints += 2;
+                    totalPoints += 5;
+                    
+                    // SSL (max 5 points)
+                    if (analysis.hasSSL) scorePoints += 5;
+                    totalPoints += 5;
+                    
+                    // Mobile viewport (max 5 points)
+                    if (analysis.hasMobileViewport) scorePoints += 5;
+                    totalPoints += 5;
+                    
+                    // Canonical URL (max 5 points)
+                    if (analysis.canonicalUrl) scorePoints += 5;
+                    totalPoints += 5;
+                    
+                    // Social media tags (max 5 points)
+                    if (analysis.socialMediaTags > 5) scorePoints += 5;
+                    else if (analysis.socialMediaTags > 0) scorePoints += 3;
+                    totalPoints += 5;
+                    
+                    // Calculate percentage
+                    const overallScore = Math.round((scorePoints / totalPoints) * 100);
+                    
                     // Update scores
                     document.getElementById('titleScore').textContent = titleScore;
                     document.getElementById('metaScore').textContent = metaScore;
                     document.getElementById('imgAltScore').textContent = imgAltScore + '%';
+                    document.getElementById('overallScore').textContent = overallScore + '%';
                     
                     // Populate analysis details
                     const analysisDetails = document.getElementById('analysisDetails');
+                    // Organize analysis into categories
                     analysisDetails.innerHTML = `
+                        <h4>Content & On-Page SEO</h4>
                         <div class="analysis-item">
                             <div class="analysis-label">Page Title</div>
                             <div class="analysis-value">${analysis.title || 'Not found'}</div>
@@ -418,8 +499,22 @@
                             </div>
                         </div>
                         <div class="analysis-item">
-                            <div class="analysis-label">H1 Tags</div>
-                            <div class="analysis-value">Found ${analysis.h1Count} H1 tag(s)</div>
+                            <div class="analysis-label">Meta Keywords</div>
+                            <div class="analysis-value">${analysis.keywordsMeta || 'Not found'}</div>
+                            <div class="analysis-indicator ${analysis.keywordsMeta ? 'warning-indicator' : 'warning-indicator'}">
+                                ${analysis.keywordsMeta ? 'Keywords meta is present but less important for modern SEO' : 'No keywords meta found (not critical for modern SEO)'}
+                            </div>
+                        </div>
+                        
+                        <h4>Page Structure</h4>
+                        <div class="analysis-item">
+                            <div class="analysis-label">Heading Structure</div>
+                            <div class="analysis-value">
+                                <strong>H1:</strong> ${analysis.h1Count} tag(s) ${analysis.h1Text ? `<small>(First H1: "${analysis.h1Text.substring(0, 50)}${analysis.h1Text.length > 50 ? '...' : ''}")</small>` : ''}<br>
+                                <strong>H2:</strong> ${analysis.headings.h2} tag(s)<br>
+                                <strong>H3:</strong> ${analysis.headings.h3} tag(s)<br>
+                                <strong>H4-H6:</strong> ${analysis.headings.h4 + analysis.headings.h5 + analysis.headings.h6} tag(s)
+                            </div>
                             <div class="analysis-indicator ${getH1IndicatorClass(analysis.h1Count)}">
                                 ${getH1Recommendation(analysis.h1Count)}
                             </div>
@@ -432,6 +527,18 @@
                             </div>
                         </div>
                         <div class="analysis-item">
+                            <div class="analysis-label">Links</div>
+                            <div class="analysis-value">
+                                <strong>Internal Links:</strong> ${analysis.internalLinks}<br>
+                                <strong>External Links:</strong> ${analysis.externalLinks}
+                            </div>
+                            <div class="analysis-indicator ${(analysis.internalLinks > 0) ? 'good-indicator' : 'warning-indicator'}">
+                                ${getLinkRecommendation(analysis.internalLinks, analysis.externalLinks)}
+                            </div>
+                        </div>
+                        
+                        <h4>Technical SEO</h4>
+                        <div class="analysis-item">
                             <div class="analysis-label">Canonical URL</div>
                             <div class="analysis-value">${analysis.canonicalUrl || 'Not found'}</div>
                             <div class="analysis-indicator ${analysis.canonicalUrl ? 'good-indicator' : 'bad-indicator'}">
@@ -443,6 +550,46 @@
                             <div class="analysis-value">${analysis.robotsMeta || 'Not found'}</div>
                             <div class="analysis-indicator ${analysis.robotsMeta ? 'good-indicator' : 'warning-indicator'}">
                                 ${analysis.robotsMeta ? 'Robots meta tag is present' : 'No robots meta tag found'}
+                            </div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="analysis-label">SSL / HTTPS</div>
+                            <div class="analysis-value">${analysis.hasSSL ? 'Secure HTTPS connection' : 'Insecure HTTP connection'}</div>
+                            <div class="analysis-indicator ${analysis.hasSSL ? 'good-indicator' : 'bad-indicator'}">
+                                ${analysis.hasSSL ? 'Good: Site uses secure HTTPS connection' : 'Critical: Site is not using secure HTTPS connection'}
+                            </div>
+                        </div>
+                        <div class="analysis-item">
+                            <div class="analysis-label">Mobile Friendliness</div>
+                            <div class="analysis-value">${analysis.hasMobileViewport ? 'Mobile viewport meta tag is present' : 'No mobile viewport meta tag found'}</div>
+                            <div class="analysis-indicator ${analysis.hasMobileViewport ? 'good-indicator' : 'bad-indicator'}">
+                                ${analysis.hasMobileViewport ? 'Good: Page is configured for mobile devices' : 'Critical: Page is not configured for mobile devices'}
+                            </div>
+                        </div>
+                        
+                        <h4>Performance Indicators</h4>
+                        <div class="analysis-item">
+                            <div class="analysis-label">Page Resources</div>
+                            <div class="analysis-value">
+                                <strong>Scripts:</strong> ${analysis.scriptCount}<br>
+                                <strong>Stylesheets:</strong> ${analysis.cssCount}<br>
+                                <strong>Inline Styles:</strong> ${analysis.inlineStyles}
+                            </div>
+                            <div class="analysis-indicator ${getPerformanceIndicatorClass(analysis.scriptCount, analysis.cssCount)}">
+                                ${getPerformanceRecommendation(analysis.scriptCount, analysis.cssCount)}
+                            </div>
+                        </div>
+                        
+                        <h4>Social Media</h4>
+                        <div class="analysis-item">
+                            <div class="analysis-label">Social Media Tags</div>
+                            <div class="analysis-value">
+                                <strong>Open Graph Tags:</strong> ${analysis.openGraphTags}<br>
+                                <strong>Twitter Card Tags:</strong> ${analysis.twitterTags}<br>
+                                <strong>Total:</strong> ${analysis.socialMediaTags}
+                            </div>
+                            <div class="analysis-indicator ${getSocialMediaIndicatorClass(analysis.socialMediaTags)}">
+                                ${getSocialMediaRecommendation(analysis.socialMediaTags)}
                             </div>
                         </div>
                     `;
@@ -523,6 +670,60 @@
             if (percent >= 80) return 'Good: Most images have alt text';
             if (percent >= 50) return 'Could improve: Add alt text to more images';
             return 'Poor: Many images missing alt text';
+        }
+        
+        function getLinkRecommendation(internalLinks, externalLinks) {
+            let recommendation = '';
+            
+            if (internalLinks < 3) {
+                recommendation += 'Consider adding more internal links for better site navigation. ';
+            } else {
+                recommendation += 'Good number of internal links. ';
+            }
+            
+            if (externalLinks < 1) {
+                recommendation += 'Consider adding some outbound links to authoritative sources.';
+            } else if (externalLinks > 20) {
+                recommendation += 'Large number of external links - ensure they all add value.';
+            } else {
+                recommendation += 'Good balance of external links.';
+            }
+            
+            return recommendation;
+        }
+        
+        function getPerformanceIndicatorClass(scriptCount, cssCount) {
+            const totalResources = scriptCount + cssCount;
+            if (totalResources <= 15) return 'good-indicator';
+            if (totalResources <= 30) return 'warning-indicator';
+            return 'bad-indicator';
+        }
+        
+        function getPerformanceRecommendation(scriptCount, cssCount) {
+            const totalResources = scriptCount + cssCount;
+            if (totalResources <= 15) {
+                return 'Good: Page has a reasonable number of resources';
+            } else if (totalResources <= 30) {
+                return 'Consider optimizing: Page has a moderate number of resources';
+            } else {
+                return 'Needs improvement: Page has many resources which may impact load time';
+            }
+        }
+        
+        function getSocialMediaIndicatorClass(tagCount) {
+            if (tagCount >= 6) return 'good-indicator';
+            if (tagCount >= 1) return 'warning-indicator';
+            return 'bad-indicator';
+        }
+        
+        function getSocialMediaRecommendation(tagCount) {
+            if (tagCount >= 6) {
+                return 'Good: Page has comprehensive social media tags';
+            } else if (tagCount >= 1) {
+                return 'Consider adding more social media tags for better sharing';
+            } else {
+                return 'Missing social media tags - add Open Graph and Twitter Card tags';
+            }
         }
     </script>
 </body>

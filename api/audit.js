@@ -84,21 +84,76 @@ app.post('/api/analyze', async (req, res) => {
         const title = $('title').text();
         const metaDescription = $('meta[name="description"]').attr('content') || '';
         const h1Count = $('h1').length;
+        const h1Text = $('h1').first().text() || '';
+        const h2Count = $('h2').length;
         const imgCount = $('img').length;
         const imgWithAltCount = $('img[alt]').length;
+        const internalLinks = $('a[href^="/"], a[href^="' + url + '"], a[href^="http://' + new URL(url).hostname + '"], a[href^="https://' + new URL(url).hostname + '"]').length;
+        const externalLinks = $('a[href^="http"]:not([href^="' + url + '"]):not([href^="http://' + new URL(url).hostname + '"]):not([href^="https://' + new URL(url).hostname + '"])').length;
         const canonicalUrl = $('link[rel="canonical"]').attr('href') || '';
         const robotsMeta = $('meta[name="robots"]').attr('content') || '';
+        const viewportMeta = $('meta[name="viewport"]').attr('content') || '';
+        const keywordsMeta = $('meta[name="keywords"]').attr('content') || '';
+        const headings = {
+            h1: h1Count,
+            h2: h2Count,
+            h3: $('h3').length,
+            h4: $('h4').length,
+            h5: $('h5').length,
+            h6: $('h6').length
+        };
+        
+        // Check for SSL
+        const hasSSL = url.startsWith('https://');
+        
+        // Analyze page load speed factors
+        const scriptCount = $('script').length;
+        const cssCount = $('link[rel="stylesheet"]').length;
+        const inlineStyles = $('style').length;
+        
+        // Check for social media meta tags
+        const openGraphTags = $('meta[property^="og:"]').length;
+        const twitterTags = $('meta[name^="twitter:"]').length;
+        const socialMediaTags = openGraphTags + twitterTags;
+        
+        // Mobile friendliness check
+        const hasMobileViewport = viewportMeta.includes('width=device-width');
 
         res.json({
             url,
             analysis: {
+                // Basic SEO Elements
                 title,
                 metaDescription,
+                h1Text,
                 h1Count,
+                h2Count,
                 imgCount,
                 imgWithAltCount,
+                internalLinks,
+                externalLinks,
                 canonicalUrl,
                 robotsMeta,
+                keywordsMeta,
+                
+                // Page Structure
+                headings,
+                
+                // Technical SEO
+                hasSSL,
+                hasMobileViewport,
+                viewportMeta,
+                
+                // Performance Indicators
+                scriptCount,
+                cssCount,
+                inlineStyles,
+                
+                // Social Media
+                socialMediaTags,
+                openGraphTags,
+                twitterTags,
+                
                 timestamp: new Date().toISOString()
             }
         });
