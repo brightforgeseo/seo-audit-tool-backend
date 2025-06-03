@@ -80,8 +80,18 @@ app.post('/api/analyze', async (req, res) => {
         // Parse the HTML
         const $ = cheerio.load(response.data);
 
-        // Extract SEO elements
-        const title = $('title').text();
+        // Extract SEO elements - making sure to only get the target site's title
+        let title = $('title').text();
+        
+        // Clean up the title to remove any SEO Audit Tool related text
+        if (title.includes('SEO Audit Tool')) {
+            // If title contains SEO Audit Tool, remove that part and anything after it
+            title = title.split('SEO Audit Tool')[0].trim();
+            // Also remove any trailing separators like | or -
+            title = title.replace(/[\|\-\.]+\s*$/, '').trim();
+        }
+        
+        console.log('Extracted title:', title);
         const metaDescription = $('meta[name="description"]').attr('content') || '';
         // Improve heading detection with more robust selectors
         const h1Count = $('h1').length;
