@@ -453,7 +453,8 @@
                     <button type="submit" id="submitButton" class="submit-button">Get Your Free SEO Audit</button>
                     <div id="errorMessage" class="error-message"></div>
                 </form>
-                <button type="button" id="checkBackendButton" style="margin-top: 10px; padding: 8px 15px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 14px;">Check Backend Status</button>
+                <!-- Backend status check only shown in development mode -->
+                <button type="button" id="checkBackendButton" style="display: none; margin-top: 10px; padding: 8px 15px; background: #f0f0f0; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 14px;">Check Backend Status</button>
                 <div id="backendStatus" style="display: none; margin-top: 10px; padding: 10px; border-radius: 4px; background-color: #f8f9fa; border: 1px solid #ddd;"></div>
                 <div id="loading" class="loading">Running audit... This may take a minute.</div>
             </div>
@@ -1447,6 +1448,17 @@
         document.addEventListener('DOMContentLoaded', function() {
             const checkBackendButton = document.getElementById('checkBackendButton');
             const backendStatus = document.getElementById('backendStatus');
+            
+            // Only show the backend status check in development mode or if debug parameter is present
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const urlParams = new URLSearchParams(window.location.search);
+            const debugMode = urlParams.has('debug');
+            
+            if (checkBackendButton && isLocalhost) {
+                checkBackendButton.style.display = 'inline-block';
+            } else if (checkBackendButton && debugMode) {
+                checkBackendButton.style.display = 'inline-block';
+            }
             
             if (checkBackendButton && backendStatus) {
                 checkBackendButton.addEventListener('click', async function() {
