@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Audit Tool Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="url"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            margin-top: 10px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+            display: none;
+        }
+        .results-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .results-label {
+            font-weight: bold;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>SEO Audit Tool Tester</h1>
+    <p>Use this simple form to test your SEO Audit Tool backend.</p>
+    
+    <div class="form-group">
+        <label for="backendUrl">Backend API URL:</label>
+        <input type="url" id="backendUrl" value="https://seo-audit-tool.onrender.com/api/analyze" placeholder="Enter your backend API URL">
+    </div>
+    
+    <div class="form-group">
+        <label for="websiteUrl">Website to Analyze:</label>
+        <input type="url" id="websiteUrl" placeholder="Enter a website URL (e.g., https://example.com)">
+    </div>
+    
+    <button id="analyzeButton">Analyze Website</button>
+    
+    <div id="loading" class="loading">Analyzing website... Please wait.</div>
+    <div id="error" class="error"></div>
+    
+    <div id="results" class="results">
+        <h2>Analysis Results</h2>
+        <div id="resultsContent"></div>
+        
+        <h3>Raw API Response</h3>
+        <pre id="rawResponse"></pre>
+    </div>
+    
+    <script>
+        document.getElementById('analyzeButton').addEventListener('click', async function() {
+            const backendUrl = document.getElementById('backendUrl').value.trim();
+            const websiteUrl = document.getElementById('websiteUrl').value.trim();
+            const analyzeButton = document.getElementById('analyzeButton');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const results = document.getElementById('results');
+            
+            // Validate inputs
+            if (!backendUrl) {
+                error.textContent = 'Please enter your backend API URL';
+                error.style.display = 'block';
+                return;
+            }
+            
+            if (!websiteUrl) {
+                error.textContent = 'Please enter a website URL to analyze';
+                error.style.display = 'block';
+                return;
+            }
+            
+            // Reset UI
+            error.style.display = 'none';
+            results.style.display = 'none';
+            loading.style.display = 'block';
+            analyzeButton.disabled = true;
+            
+            try {
+                console.log(`Sending request to: ${backendUrl}`);
+                console.log(`Analyzing website: ${websiteUrl}`);
+                
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: websiteUrl })
+                });
+                
+                console.log('Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                // Display the raw response
+                document.getElementById('rawResponse').textContent = JSON.stringify(data, null, 2);
+                
+                // Format and display the results
+                if (data.analysis) {
+                    const analysis = data.analysis;
+                    const resultsContent = document.getElementById('resultsContent');
+                    
+                    resultsContent.innerHTML = `
+                        <div class="results-item">
+                            <div class="results-label">Page Title:</div>
+                            <div>${analysis.title || 'Not found'}</div>
+                        </div>
+                        <div class="results-item">
+                            <div class="results-label">Meta Description:</div>
+                            <div>${analysis.metaDescription || 'Not found'}</div>
+                        </div>
+                        <div class="results-item">
+                            <div class="results-label">H1 Tags:</div>
+                            <div>Found ${analysis.h1Count} H1 tag(s)</div>
+                        </div>
+                        <div class="results-item">
+                            <div class="results-label">Images:</div>
+                            <div>Found ${analysis.imgCount} images, ${analysis.imgWithAltCount} with alt text</div>
+                        </div>
+                        <div class="results-item">
+                            <div class="results-label">Canonical URL:</div>
+                            <div>${analysis.canonicalUrl || 'Not found'}</div>
+                        </div>
+                        <div class="results-item">
+                            <div class="results-label">Robots Meta:</div>
+                            <div>${analysis.robotsMeta || 'Not found'}</div>
+                        </div>
+                        <div class="results-item">
+                            <div class="results-label">Timestamp:</div>
+                            <div>${analysis.timestamp}</div>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('resultsContent').innerHTML = '<p>Invalid response format from server</p>';
+                }
+                
+                results.style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+                analyzeButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

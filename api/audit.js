@@ -367,6 +367,99 @@ app.post('/api/analyze', async (req, res) => {
         const hasMobileViewport = typeof viewportMeta === 'string' && viewportMeta.includes('width=device-width');
         console.log('Mobile viewport:', { meta: viewportMeta, hasMobileViewport });
 
+        // === Advanced checks and scoring ===
+        const checkSecurityHeaders = async (url) => {
+            try {
+                const headerResponse = await axios.head(url, { validateStatus: () => true, timeout: 10000 });
+                const headers = headerResponse.headers || {};
+                return {
+                    hasXFrameOptions: Boolean(headers['x-frame-options']),
+                    hasContentSecurityPolicy: Boolean(headers['content-security-policy']),
+                    hasXXSSProtection: Boolean(headers['x-xss-protection']),
+                    hasStrictTransportSecurity: Boolean(headers['strict-transport-security']),
+                    hasReferrerPolicy: Boolean(headers['referrer-policy']),
+                    hasPermissionsPolicy: Boolean(headers['permissions-policy'] || headers['feature-policy'])
+                };
+            } catch (err) {
+                console.error('Security header check failed:', err.message);
+                return {};
+            }
+        };
+
+        const checkResourceHints = ($) => ({
+            hasPreload: $('link[rel="preload"]').length > 0,
+            hasPreconnect: $('link[rel="preconnect"]').length > 0,
+            hasDnsPrefetch: $('link[rel="dns-prefetch"]').length > 0,
+            totalResourceHints: $('link[rel="preload"], link[rel="preconnect"], link[rel="dns-prefetch"]').length
+        });
+
+        const analyzeImageOptimization = ($) => {
+            const imgs = $('img');
+            let withLazy = 0;
+            let withSrcset = 0;
+            imgs.each((i, el) => {
+                const $img = $(el);
+                if ($img.attr('loading') === 'lazy') withLazy++;
+                if ($img.attr('srcset')) withSrcset++;
+            });
+            return { total: imgs.length, withLazy, withSrcset };
+        };
+
+        const analyzeURLStructure = (u) => {
+            try {
+                const { pathname } = new URL(u);
+                const clean = pathname.toLowerCase() === pathname && !pathname.includes('_');
+                const lenOk = pathname.length < 100;
+                return { clean, lenOk, score: (clean ? 50 : 0) + (lenOk ? 50 : 0) };
+            } catch {
+                return { clean: false, lenOk: false, score: 0 };
+            }
+        };
+
+        const calculateTechnicalScore = ({ hasSSL, hasMobileViewport, canonicalUrl, robotsMeta, resourceHints, securityHeaders }) => {
+            let score = 0;
+            if (hasSSL) score += 20;
+            if (hasMobileViewport) score += 15;
+            if (canonicalUrl) score += 10;
+            if (!robotsMeta.includes('noindex')) score += 15;
+            if (resourceHints && resourceHints.totalResourceHints) score += 10;
+            if (securityHeaders && securityHeaders.hasContentSecurityPolicy) score += 10;
+            return Math.min(score, 100);
+        };
+
+        const calculateContentScore = ({ textToCodeRatio, h1Count, h2Count, keywordDensity }) => {
+            let score = 0;
+            if (textToCodeRatio > 0.1) score += 20;
+            if (h1Count === 1) score += 20;
+            if (h2Count >= 2) score += 10;
+            if (keywordDensity > 0.5 && keywordDensity < 5) score += 10;
+            return Math.min(score, 100);
+        };
+
+        const calculateWeightedScore = (scores) => {
+            const weights = { technical: 0.4, content: 0.4, performance: 0.2 };
+            return Math.round(scores.technical * weights.technical + scores.content * weights.content + scores.performance * weights.performance);
+        };
+
+        const resourceHints = checkResourceHints($);
+        const securityHeaders = await checkSecurityHeaders(url);
+        const imageOptimization = analyzeImageOptimization($);
+        const urlStructure = analyzeURLStructure(url);
+
+        const technicalScore = calculateTechnicalScore({ hasSSL, hasMobileViewport, canonicalUrl, robotsMeta, resourceHints, securityHeaders });
+        const contentScore = calculateContentScore({ textToCodeRatio, h1Count, h2Count, keywordDensity });
+        const performanceScore = Math.max(100 - (scriptCount + cssCount) * 2, 0);
+        const overallScore = calculateWeightedScore({ technical: technicalScore, content: contentScore, performance: performanceScore });
+
+        const recommendations = [];
+        if (!hasMobileViewport) recommendations.push('Add a viewport meta tag for mobile responsiveness');
+        if (h1Count === 0) recommendations.push('Add at least one H1 heading');
+        if (imgWithAltCount < imgCount) recommendations.push(`Add alt text to ${imgCount - imgWithAltCount} images`);
+        if (keywordDensity < 0.5) recommendations.push('Use your primary keyword more frequently in body copy');
+        if (!structuredDataCount) recommendations.push('Implement schema.org structured data');
+
+        console.log('Scores:', { technicalScore, contentScore, performanceScore, overallScore });
+
         // Clear the timeout since the request completed successfully
         clearTimeout(timeout);
         
@@ -416,6 +509,15 @@ app.post('/api/analyze', async (req, res) => {
                 openGraphTags,
                 twitterTags,
                 
+                // Advanced scores
+                technicalScore,
+                contentScore,
+                performanceScore,
+                overallScore,
+
+                // Suggestions
+                recommendations,
+
                 timestamp: new Date().toISOString()
             }
         });
@@ -445,7 +547,7 @@ app.post('/api/analyze', async (req, res) => {
 });
 // Global error handlers to prevent crashes
 process.on('uncaughtException', (error) => {
-    console.error('UNCAUGHT EXCEPTION! 💥 Shutting down gracefully...', error);
+    console.error('UNCAUGHT EXCEPTION! Shutting down gracefully...', error);
     console.error(error.name, error.message, error.stack);
     // Give the server 3 seconds to finish current requests before shutting down
     setTimeout(() => {
@@ -454,7 +556,7 @@ process.on('uncaughtException', (error) => {
 });
 
 process.on('unhandledRejection', (error) => {
-    console.error('UNHANDLED REJECTION! 💥 Shutting down gracefully...', error);
+    console.error('UNHANDLED REJECTION! Shutting down gracefully...', error);
     // Give the server 3 seconds to finish current requests before shutting down
     setTimeout(() => {
         process.exit(1);
