@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import axios from 'axios';
 import cheerio from 'cheerio';
+import { XMLParser } from 'fast-xml-parser';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -460,6 +461,106 @@ app.post('/api/analyze', async (req, res) => {
 
         console.log('Scores:', { technicalScore, contentScore, performanceScore, overallScore });
 
+        // === New advanced utility functions ===
+        const fetchRobotsTxt = async (siteUrl) => {
+            try {
+                const robotsUrl = new URL('/robots.txt', siteUrl).href;
+                const res = await axios.get(robotsUrl, { timeout: 15000, validateStatus: () => true });
+                if (res.status >= 400) return { exists: false, status: res.status };
+                const disallows = res.data.split('\n').filter(l => l.toLowerCase().startsWith('disallow'));
+                return { exists: true, disallows, status: res.status };
+            } catch (err) {
+                return { exists: false, error: err.message };
+            }
+        };
+
+        const fetchXmlSitemap = async (siteUrl) => {
+            try {
+                const sitemapUrl = new URL('/sitemap.xml', siteUrl).href;
+                const res = await axios.get(sitemapUrl, { timeout: 15000, validateStatus: () => true });
+                if (res.status >= 400) return { exists: false, status: res.status };
+                const parser = new XMLParser();
+                let parsed = {};
+                try { parsed = parser.parse(res.data); } catch { }
+                const urlCount = parsed?.urlset?.url ? (Array.isArray(parsed.urlset.url) ? parsed.urlset.url.length : 1) : 0;
+                return { exists: true, urlCount };
+            } catch (err) {
+                return { exists: false, error: err.message };
+            }
+        };
+
+        const validateHreflang = ($) => {
+            const links = $('link[rel="alternate"][hreflang]');
+            if (!links.length) return { hasHreflang: false };
+            const codes = [];
+            links.each((_, el) => codes.push($(el).attr('hreflang')));
+            const errors = [];
+            if (!codes.includes('x-default')) errors.push('Missing x-default hreflang');
+            return { hasHreflang: true, count: links.length, errors };
+        };
+
+        const checkPagination = ($) => {
+            const prev = $('link[rel="prev"]').length > 0;
+            const next = $('link[rel="next"]').length > 0;
+            return { prev, next, paginated: prev || next };
+        };
+
+        const checkImageSizes = async ($, pageUrl, limit = 5) => {
+            const imgs = $('img').slice(0, limit);
+            let total = 0, counted = 0;
+            for (let i = 0; i < imgs.length; i++) {
+                const src = $(imgs[i]).attr('src');
+                if (!src) continue;
+                let abs;
+                try { abs = new URL(src, pageUrl).href; } catch { continue; }
+                try {
+                    const head = await axios.head(abs, { timeout: 10000, validateStatus: () => true });
+                    const len = parseInt(head.headers['content-length'] || '0', 10);
+                    if (len) { total += len; counted++; }
+                } catch { }
+            }
+            return { sampled: counted, avgSize: counted ? Math.round(total / counted) : 0 };
+        };
+
+        const evaluateCaching = (headers) => {
+            const cc = headers['cache-control'] || '';
+            const maxAgeMatch = cc.match(/max-age=(\d+)/);
+            const maxAge = maxAgeMatch ? parseInt(maxAgeMatch[1], 10) : 0;
+            return { cacheControl: cc, maxAgeSeconds: maxAge, good: maxAge > 2592000 }; // >30d
+        };
+
+        const mixedContentCheck = ($, pageUrl) => {
+            if (!pageUrl.startsWith('https://')) return { mixedCount: 0 };
+            const count = $('img[src^="http://"], script[src^="http://"], link[href^="http://"], iframe[src^="http://"]').length;
+            return { mixedCount: count };
+        };
+
+        const validateStructuredData = ($) => {
+            let errors = 0;
+            $('script[type="application/ld+json"]').each((_, el) => {
+                try { JSON.parse($(el).html()); } catch { errors++; }
+            });
+            return { errors };
+        };
+
+        // === Execute new checks ===
+        const robotsInfo = await fetchRobotsTxt(url);
+        const sitemapInfo = await fetchXmlSitemap(url);
+        const hreflangInfo = validateHreflang($);
+        const paginationInfo = checkPagination($);
+        const imageSizeInfo = await checkImageSizes($, url);
+        const cachingInfo = evaluateCaching(response.headers || {});
+        const mixedContentInfo = mixedContentCheck($, url);
+        const structuredDataValidation = validateStructuredData($);
+
+        // === Recommendations based on new checks ===
+        if (!robotsInfo.exists) recommendations.push('Add a robots.txt');
+        if (!sitemapInfo.exists) recommendations.push('Add a sitemap.xml and reference it in robots.txt');
+        if (hreflangInfo.errors && hreflangInfo.errors.length) recommendations.push('Fix hreflang issues: ' + hreflangInfo.errors.join(', '));
+        if (mixedContentInfo.mixedCount) recommendations.push(`${mixedContentInfo.mixedCount} insecure (HTTP) assets found on HTTPS page`);
+        if (!cachingInfo.good) recommendations.push('Serve static assets with far-future Cache-Control headers');
+        if (structuredDataValidation.errors) recommendations.push(`${structuredDataValidation.errors} structured-data blocks contain invalid JSON`);
+
         // Clear the timeout since the request completed successfully
         clearTimeout(timeout);
         
@@ -515,11 +616,19 @@ app.post('/api/analyze', async (req, res) => {
                 performanceScore,
                 overallScore,
 
-                // Suggestions
-                recommendations,
-
+                // Crawl & technical extras
+                robotsInfo,
+                sitemapInfo,
+                hreflangInfo,
+                paginationInfo,
+                imageSizeInfo,
+                cachingInfo,
+                mixedContentInfo,
+                structuredDataValidation,
+                
                 timestamp: new Date().toISOString()
-            }
+            },
+            recommendations
         });
 
     } catch (error) {
@@ -545,6 +654,7 @@ app.post('/api/analyze', async (req, res) => {
         });
     }
 });
+
 // Global error handlers to prevent crashes
 process.on('uncaughtException', (error) => {
     console.error('UNCAUGHT EXCEPTION! Shutting down gracefully...', error);
